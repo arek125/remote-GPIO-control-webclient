@@ -8,6 +8,8 @@ import Login from './views/Login.vue'
 import Pwms from './views/Pwms.vue'
 import Chains from './views/Chains.vue'
 import SensorsView from './views/SensorsView.vue'
+import Rf from './views/Rf.vue'
+import CustomCmds from './views/CustomCmds.vue'
 import VueCookies from 'vue-cookies'
 
 Vue.use(Router)
@@ -51,6 +53,18 @@ const router = new Router({
       name: 'sensors',
       meta: { error: null, protected: true },
       component: SensorsView
+    },
+    {
+      path: '/rf',
+      name: 'rf',
+      meta: { error: null, protected: true },
+      component: Rf
+    },
+    {
+      path: '/cmds',
+      name: 'customcmds',
+      meta: { error: null, protected: true },
+      component: CustomCmds
     },
     {
       path: '/',

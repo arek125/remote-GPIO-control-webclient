@@ -27,8 +27,3 @@ export default {
 }
 </script>
 
-<style>
-/* .toast{
-margin: 10px
-} */
-</style>

@@ -4,7 +4,7 @@
     <div class="container" v-else>
       <div class="columns">
         <GPIO_Pwm class="column col-8 col-md-12" col="col-4 col-xl-6 col-md-12"/>
-        <History class="column col-4 hide-md" category="pwm"/>
+        <History class="column col-4 col-md-12" category="pwm"/>
       </div>
     </div>
   </div>

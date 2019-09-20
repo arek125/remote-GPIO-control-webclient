@@ -45,7 +45,7 @@
                                             <i class="form-icon"></i>Reverse
                                         </label>
                                     </div>
-                                    <div class="form-group">
+                                    <!-- <div class="form-group">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label" for="type">Bind type</label>
                                         </div>
@@ -68,7 +68,7 @@
                                             <i class="form-icon" :class="{'loading': loading}"></i>
                                             <p class="form-input-hint" v-show="!modalData.outputs.length && !loading">Add outputs to make them visible here.</p>
                                         </div>
-                                    </div>
+                                    </div> -->
                                 </form>
                             </div>
                         </div>
@@ -90,20 +90,22 @@
                         </div>
                     </div>
                     <div v-else class="columns">
-                        <div class="tile tile-centered column" v-bind:class="[col]" v-for="input in inputs" :key="input.id" >
-                            <div class="tile-icon">
-                                <button class="btn btn-action btn-lg unclickable" v-bind:class="[stateButton(input.state,input.reverse)]">
-                                    <i class="icon icon-flag centered"></i>
-                                </button>
-                            </div>
-                            <div class="tile-content">
-                                <div class="tile-title">{{ input.name }}</div>
-                                <div class="tile-subtitle text-gray">{{ inputDisc(input.gpio,input.reverse,input.bindType) }}</div>
-                            </div>
-                            <div class="tile-action">
-                                <button class="btn btn-link" v-on:click="openModal('Edit: '+input.name,input.name,input.gpio,!!input.reverse,input.bindType,input.id,input.bindId)">
-                                    <i class="icon icon-edit"></i>
-                                </button>
+                        <div class="column" v-bind:class="[col]" v-for="input in inputs" :key="input.id" >
+                            <div class="tile tile-centered">
+                                <div class="tile-icon">
+                                    <button class="btn btn-action btn-lg unclickable" v-bind:class="[stateButton(input.state,input.reverse)]">
+                                        <i class="icon icon-flag centered"></i>
+                                    </button>
+                                </div>
+                                <div class="tile-content">
+                                    <div class="tile-title">{{ input.name }}</div>
+                                    <div class="tile-subtitle text-gray">{{ inputDisc(input.gpio,input.reverse,input.bindType) }}</div>
+                                </div>
+                                <div class="tile-action">
+                                    <button class="btn btn-link" v-on:click="openModal('Edit: '+input.name,input.name,input.gpio,!!input.reverse,input.bindType,input.id,input.bindId)">
+                                        <i class="icon icon-edit"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -189,15 +191,15 @@ export default {
           for (var j = 2; j < (datalist.length - 1); j++) {
             this.modalData.allUsedPins.push(datalist[j])
           }
-        }),
-        this.doQPost('GPIO_Oname').then(datalist => {
-          for (var j = 2; j < (datalist.length - 1); j += 4) {
-            this.modalData.outputs.push({
-              id: datalist[j],
-              name: datalist[j + 1]
-            })
-          }
         })
+        // this.doQPost('GPIO_Oname').then(datalist => {
+        //   for (var j = 2; j < (datalist.length - 1); j += 4) {
+        //     this.modalData.outputs.push({
+        //       id: datalist[j],
+        //       name: datalist[j + 1]
+        //     })
+        //   }
+        // })
       ]).catch(err => {
         this.modalData.errors.push(err.message)
       })
@@ -221,8 +223,10 @@ export default {
       }
       if (!this.modalData.errors.length) {
         let postData = ''
-        if (deleteO) { postData = 'Delete_GPIO_out;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name } else if (this.modalData.id === -1) { postData = 'Add_GPIO_in;' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.bindId + ';' + this.modalData.bindType } else { postData = 'Edit_GPIO_in;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.bindId + ';' + this.modalData.bindType + ';' + this.modalData.prevsGpios }
-        this.doPost(postData).then(datalist => {
+        if (deleteO) { postData = 'Delete_GPIO_out;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name } 
+        else if (this.modalData.id === -1) { postData = 'Add_GPIO_in;' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.bindId + ';' + this.modalData.bindType } 
+        else { postData = 'Edit_GPIO_in;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.bindId + ';' + this.modalData.bindType + ';' + this.modalData.prevsGpios }
+        this.doPost(postData).then(() => {
           this.getInputs()
           this.modalData.active = false
         }).catch(err => {
@@ -265,17 +269,3 @@ export default {
 }
 </script>
 
-<style>
-.columns {
-    padding-bottom: 120px;
-}
-#autorefresh {
-    width: 75px;
-}
-.unclickable {
-    pointer-events: none;
-}
-.btn-group{
-    margin-right: 15px
-}
-</style>

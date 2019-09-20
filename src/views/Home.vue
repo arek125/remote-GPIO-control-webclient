@@ -22,7 +22,7 @@
             </div>
         </div>
     </div>
-    <div class="modal" v-bind:class="{ active: modalMCL.active }">
+    <!-- <div class="modal" v-bind:class="{ active: modalMCL.active }">
         <a class="modal-overlay" aria-label="Close" v-on:click="modalMCL.active = false"></a>
         <div class="modal-container">
             <div class="modal-header">
@@ -48,6 +48,34 @@
                 <button class="btn btn-primary" v-on:click="comAndReload('UpdateMCL;'+modalMCL.cmdLine, 20, 'Update cmd line and restart ?')" :disabled="this.loading"><i class="icon icon-check"></i> Confirm</button>
             </div>
         </div>
+    </div> -->
+    <div class="modal" v-bind:class="{ active: modalConfig.active }">
+        <a class="modal-overlay" aria-label="Close" v-on:click="modalConfig.active = false"></a>
+        <div class="modal-container">
+            <div class="modal-header">
+                <a class="btn btn-clear float-right" aria-label="Close" v-on:click="modalConfig.active = false"></a>
+                <div class="modal-title h5">RGC-Config</div>
+                <Error v-if="modalConfig.errors.length" v-on:close-err="modalConfig.errors = []" v-bind:error-array="modalConfig.errors"/>
+            </div>
+            <div class="modal-body">
+                <div class="content">
+                    <div v-for="section in modalConfig.sections" :key="section.name">
+                        <h3>{{section.name}}</h3>
+                        <table class="table table-striped table-hover">
+                          <tbody>
+                            <tr v-for="kv in section.kvs" :key="kv.key">
+                              <td>{{kv.key}}</td>
+                              <td><input class="form-input" type="text" v-model="kv.val"></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" v-on:click="setConfigSections()" :disabled="this.loading"><i class="icon icon-check"></i> Confirm</button>
+            </div>
+        </div>
     </div>
     <div class="container">
       <div class="columns">
@@ -69,7 +97,7 @@
           </div>
           <div class="panel-footer">
             <div class="btn-group btn-group-block">
-              <button class="btn" v-on:click="openMCLModal()">Main command line</button>
+              <button class="btn" v-on:click="getConfigSections()">Config</button>
               <button class="btn" v-on:click="comAndReload('Server_restart', 20, 'Restart RGC app ?')">Restart RGC app</button>
               <button class="btn" v-on:click="comAndReload('Server_reboot', 60, 'Reboot server ?')">Reboot server</button>
               <button class="btn" v-on:click="logsModalActive = true">Server Logs</button>
@@ -80,7 +108,8 @@
             </div>
           </div>
         </div>
-        <History class="column col-8 hide-md" category="all"/>
+        <History class="column col-4 col-md-12" category="all"/>
+        <LinkedPis class="column col-4 col-md-12"/>
       </div>
     </div>
   </div>
@@ -91,6 +120,7 @@
 import Error from '@/components/Error.vue'
 import ServerLogs from '@/components/ServerLogs.vue'
 import History from '@/components/History.vue'
+import LinkedPis from '@/components/LinkedPis.vue'
 
 export default {
   name: 'Home',
@@ -109,10 +139,15 @@ export default {
         active: false,
         currentTime: 0
       },
-      modalMCL: {
+      // modalMCL: {
+      //   active: false,
+      //   errors: [],
+      //   cmdLine: ''
+      // },
+      modalConfig: {
         active: false,
         errors: [],
-        cmdLine: ''
+        sections: []
       },
       logsModalActive: false,
       serverInfo: {},
@@ -153,34 +188,64 @@ export default {
     openLink (link) {
       window.open(link, '_blank')
     },
-    openMCLModal () {
-      this.modalMCL.active = true
-      this.modalMCL.errors = []
-      this.doPost('GetMCL').then(datalist => {
-        this.modalMCL.cmdLine = datalist[2]
+    // openMCLModal () {
+    //   this.modalMCL.active = true
+    //   this.modalMCL.errors = []
+    //   this.doPost('GetMCL').then(datalist => {
+    //     this.modalMCL.cmdLine = datalist[2]
+    //   }).catch(err => {
+    //     this.modalMCL.errors.push(err.message)
+    //   })
+    // },
+    // updateMCLModal () {
+    //   this.modalMCL.errors = []
+    //   this.doPost('UpdateMCL;' + this.modalMCL.cmdLine).then(() => {
+    //     this.modalMCL.active = false
+    //   }).catch(err => {
+    //     this.modalMCL.errors.push(err.message)
+    //   })
+    // },
+    getConfigSections (){
+      this.modalConfig.active = true
+      this.modalConfig.errors = []
+      this.doPost('GetConfigSections').then((datalist) => {
+        this.modalConfig.sections = []
+        for (var j = 2; j < (datalist.length - 1); j = j + 2){
+          let kvArr = datalist[j+1].split("$")
+          let kvObjArr = []
+          for (let i = 0;i<kvArr.length;i=i+2)kvObjArr.push({key: kvArr[i], val: kvArr[i+1]})
+          this.modalConfig.sections.push({name: datalist[j], kvs: kvObjArr})
+        }
       }).catch(err => {
-        this.modalMCL.errors.push(err.message)
+        this.modalConfig.errors.push(err.message)
       })
     },
-    updateMCLModal () {
-      this.modalMCL.errors = []
-      this.doPost('UpdateMCL;' + this.modalMCL.cmdLine).then(datalist => {
-        this.modalMCL.active = false
+    setConfigSections () {
+      this.modalConfig.errors = []
+      let configArr = []
+      for(let i=0;i<this.modalConfig.sections.length;i++){
+        let section = this.modalConfig.sections[i]
+        for(let j=0;j<section.kvs.length;j++)configArr.push(section.name,section.kvs[j].key,section.kvs[j].val)
+      }
+      this.doPost('SetConfigSections;'+configArr.join(";")).then(() => {
+        this.modalConfig.active = false
+        this.comAndReload('Server_restart', 20, 'Restart RGC app now ?')
       }).catch(err => {
-        this.modalMCL.errors.push(err.message)
+        this.modalConfig.errors.push(err.message)
       })
-    }
+    },
   },
   components: {
     Error,
     ServerLogs,
-    History
+    History,
+    LinkedPis
   }
 }
 </script>
 
 <style>
 .log-container{
-  max-width: 95vw;
+  max-width: 95vw !important;
 }
 </style>

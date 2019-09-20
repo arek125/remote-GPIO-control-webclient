@@ -8,7 +8,7 @@
             <div class="panel-nav">
                 <div class="btn-group btn-group-block float-right">
                     <button class="btn" v-on:click="getChains()"><i class="icon icon-refresh centered"></i></button>
-                    <button class="btn" v-on:click="openChainModal('Add new execution chain','',-1)"><i class="icon icon-plus centered"></i></button>
+                    <button class="btn" v-on:click="openChainModal('Add new execution chain','',-1,1)"><i class="icon icon-plus centered"></i></button>
                 </div>
             </div>
             <div class="panel-body">
@@ -29,6 +29,15 @@
                                         </div>
                                         <div class="col-9 col-sm-12">
                                             <input class="form-input" type="text" id="name" placeholder="Name" v-model="modalChainData.name">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="countdown">Loop countdown</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                            <input class="form-input" type="number" id="countdown"  v-model="modalChainData.countdown">
+                                            <p class="text-gray text-italic">-1 infinite, 0 disabled or any number for loop countdown</p>
                                         </div>
                                     </div>
                                 </form>
@@ -59,7 +68,10 @@
                                             <select class="form-select" id="type" v-model="modalBondData.type">
                                                 <option value="output">Output</option>
                                                 <option value="pwm">PWM</option>
-                                                <option value="action">Action from schedule</option>
+                                                <option value="action">Check and run automated action</option>
+                                                <option value="rfsend">Transmit RF Code</option>
+                                                <option value="cmd">Execude custom command</option>
+                                                <option value="chain">Execude or cancel other chain</option>
                                             </select>
                                         </div>
                                     </div>
@@ -69,6 +81,24 @@
                                         </div>
                                         <div class="col-9 col-sm-12">
                                             <input class="form-input" min="0" type="number" id="deley" placeholder="Single GPIO BCM number" v-model="modalBondData.deley">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-switch">
+                                            <input type="checkbox" v-model="modalBondData.bondLinked" v-on:change="modalBondData.linkId=0;reFetchTargetsData()">
+                                            <i class="form-icon"></i>Linked pi execute?
+                                        </label>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !modalBondData.linkedPis.length}" v-if="modalBondData.bondLinked">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label">Linked pi device</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.linkId" v-on:change="reFetchTargetsData()">
+                                                <option v-for="link in modalBondData.linkedPis" :key="link.id" :value="link.id">{{ link.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.linkedPis.length && !loading">Add linked pis devices to make them pickable here.</p>
                                         </div>
                                     </div>
                                     <div class="form-group" :class="{'has-error': !modalBondData.outputs.length}" v-if="modalBondData.type == 'output'">
@@ -107,7 +137,43 @@
                                             <p class="form-input-hint" v-show="!modalBondData.actions.length && !loading">Add actions to make them pickable here.</p>
                                         </div>
                                     </div>
-                                    <div class="form-group" v-show="modalBondData.type != 'action'">
+                                    <div class="form-group" :class="{'has-error': !modalBondData.rfCodes.length}" v-else-if="modalBondData.type == 'rfsend'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">RF transmit target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.rfId">
+                                                <option v-for="rf in modalBondData.rfCodes" :key="rf.id" :value="rf.id">{{ rf.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.rfCodes.length && !loading">Add RF codes to make them pickable here.</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !modalBondData.cmds.length}" v-else-if="modalBondData.type == 'cmd'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Custom command target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.cmdId">
+                                                <option v-for="cmd in modalBondData.cmds" :key="cmd.id" :value="cmd.id">{{ cmd.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.cmds.length && !loading">Add cmd commands to make them pickable here.</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !modalBondData.chains.length}" v-else-if="modalBondData.type == 'chain'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Chain target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.exeChainId">
+                                                <option v-for="chain in modalBondData.chains" :key="chain.id" :value="chain.id">{{ chain.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.chains.length && !loading">Add chains to make them pickable here.</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" v-show="modalBondData.type != 'action' && modalBondData.type != 'rfsend' && modalBondData.type != 'cmd'">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label" for="state">Set state</label>
                                         </div>
@@ -115,7 +181,7 @@
                                             <select class="form-select" id="state" v-model="modalBondData.state">
                                                 <option value="0">OFF</option>
                                                 <option value="1">ON</option>
-                                                <option value="2">OPPOSITE</option>
+                                                <option value="2" v-show="modalBondData.type != 'chain'">OPPOSITE</option>
                                             </select>
                                         </div>
                                     </div>
@@ -159,8 +225,11 @@
                                         <button class="btn btn-link" :disabled="index==0" v-on:click="reorder(true,index)"><i class="icon icon-upward"></i></button>
                                         <button class="btn btn-link" :disabled="index==(modalReorderData.bonds.length-1)" v-on:click="reorder(false,index)"><i class="icon icon-downward"></i></button>
                                         <span v-if="bond.type == 'action'" >{{ bond.lp+'. '+bond.actionName + ' Execude '+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'rfsend'" >{{ bond.lp+'. '+bond.rfName + ' Transmit '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'output'" >{{bond.lp+'. '+bond.outputName+" "+outState(bond.outputState)+' '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'pwm'" >{{bond.lp+'. '+bond.pwmName+" "+pwmState(bond.pwmSs,bond.pwmDc,bond.pwmFr)+' '+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'cmd'" >{{ bond.lp+'. '+bond.cmdName + ' Execude '+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execude ':' Cancel ')+ bond.deley+'s'}}</span>
                                     </dt>
                                 </dl>
                                 <div v-else>No bonds added.</div>
@@ -179,7 +248,7 @@
                         <p class="empty-title h5">There are no chains configured</p>
                         <p class="empty-subtitle">Click the button to configure new</p>
                         <div class="empty-action">
-                            <button class="btn btn-primary" v-on:click="openChainModal('Add new execution chain','',-1)"><i class="icon icon-plus centered"></i></button>
+                            <button class="btn btn-primary" v-on:click="openChainModal('Add new execution chain','',-1,1)"><i class="icon icon-plus centered"></i></button>
                         </div>
                     </div>
                     <div v-else class="columns">
@@ -189,10 +258,10 @@
                                     <button class="btn btn-action btn-lg" v-on:click="execudeOrCancel(index)" v-bind:class="{'btn-success': !chain.status && chain.bonds.length, 'btn-warning': chain.status, 'btn-code': !chain.status && !chain.bonds.length}" :disabled="!chain.bonds.length">
                                         <i class="icon icon-forward centered" v-bind:class="{'icon-forward': !chain.status, 'icon-stop': chain.status}"></i>
                                     </button>
-                                    <button class="btn btn-link" v-on:click="openChainModal('Edit: '+chain.name,chain.name,chain.id)">
+                                    <button class="btn btn-link" v-on:click="openChainModal('Edit: '+chain.name,chain.name,chain.id,chain.countdown)">
                                         <i class="icon icon-edit"></i>
                                     </button>
-                                    <button class="btn btn-link" v-on:click="openBondModal('Add new chain bond',-1,chain.id,'output',1,-1,-1,600,0,0,-1)">
+                                    <button class="btn btn-link" v-on:click="openBondModal('Add new chain bond',-1,chain.id,'output',1,-1,-1,600,0,0,-1,-1,-1,0,-1)">
                                         <i class="icon icon-plus"></i>
                                     </button>
                                     <button class="btn btn-link" :disabled="chain.bonds.length < 2 || chain.status > 0" v-on:click="openReorderModal(chain.id,index,chain.bonds)">
@@ -205,10 +274,13 @@
                                     </div>
                                     <div class="tile-subtitle">
                                         <ol class="list" v-if="chain.bonds.length">
-                                            <li v-for="(bond) in chain.bonds" :key="bond.id" v-bind:class="{'text-warning': bond.lp == chain.status}" v-on:click="openBondModal('Edit bond lp. '+bond.lp,bond.id,bond.chainId,bond.type,bond.deley,bond.outputId,bond.pwmId,bond.pwmFr,bond.pwmDc,bond.type=='pwm'?bond.pwmSs:bond.outputState,bond.actionId)">
+                                            <li v-for="(bond) in chain.bonds" :key="bond.id" v-bind:class="{'text-warning': bond.lp == chain.status}" v-on:click="openBondModal('Edit bond lp. '+bond.lp,bond.id,bond.chainId,bond.type,bond.deley,bond.outputId,bond.pwmId,bond.pwmFr,bond.pwmDc,bond.type=='pwm'?bond.pwmSs:bond.outputState,bond.actionId,bond.rfId,bond.cmdId,bond.linkId,bond.execChainId)">
                                                 <button class="btn btn-link" v-if="bond.type == 'action'" >{{ bond.actionName + ' Execude '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'output'" >{{bond.outputName+' '+outState(bond.outputState)+' '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'pwm'" >{{bond.pwmName+' '+pwmState(bond.pwmSs,bond.pwmDc,bond.pwmFr)+' '+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'rfsend'" >{{ bond.rfName + ' Transmit '+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'cmd'" >{{ bond.cmdName + ' Execude '+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execude ':' Cancel ')+ bond.deley+'s'}}</button>
                                             </li>
                                         </ol>
                                         <div v-else>No bonds added.</div>
@@ -245,6 +317,7 @@ export default {
         id: -1,
         title: 'New execution chain',
         name: '',
+        countdown: 1,
         errors: []
       },
       modalBondData: {
@@ -254,6 +327,7 @@ export default {
         title: 'New chain bond',
         type: '',
         deley: 1,
+        bondLinked: false,
         outputs: [],
         outputId: -1,
         pwms: [],
@@ -263,6 +337,14 @@ export default {
         state: 0,
         actions: [],
         actionId: -1,
+        rfId: -1,
+        rfCodes: [],
+        cmdId: -1,
+        cmds: [],
+        linkId: 0,
+        linkedPis: [],
+        exeChainId: -1,
+        chains: [],
         errors: []
       },
       modalReorderData: {
@@ -308,10 +390,11 @@ export default {
       }
       return comparison
     },
-    openChainModal (title, name, id) {
+    openChainModal (title, name, id, countdown) {
       this.modalChainData.active = true
       this.modalChainData.title = title
       this.modalChainData.name = name
+      this.modalChainData.countdown = countdown
       this.modalChainData.id = id
       this.modalChainData.errors = []
     },
@@ -322,8 +405,10 @@ export default {
       }
       if (!this.modalChainData.errors.length) {
         let postData = ''
-        if (deleteO) { postData = 'GPIO_ChainDelete;' + this.modalChainData.id } else if (this.modalChainData.id === -1) { postData = 'GPIO_ChainAdd;' + this.modalChainData.name } else { postData = 'GPIO_ChainUpdate;' + this.modalChainData.id + ';' + this.modalChainData.name }
-        this.doPost(postData).then(datalist => {
+        if (deleteO) { postData = 'GPIO_ChainDelete;' + this.modalChainData.id } 
+        else if (this.modalChainData.id === -1) { postData = 'GPIO_ChainAdd;' + this.modalChainData.name+";"+this.modalChainData.countdown } 
+        else { postData = 'GPIO_ChainUpdate;' + this.modalChainData.id + ';' + this.modalChainData.name+";"+this.modalChainData.countdown }
+        this.doPost(postData).then(() => {
           this.getChains()
           this.modalChainData.active = false
         }).catch(err => {
@@ -331,7 +416,7 @@ export default {
         })
       }
     },
-    openBondModal (title, id, chainId, type, deley, outputId, pwmId, pwmFr, pwmDc, state, actionId) {
+    openBondModal (title, id, chainId, type, deley, outputId, pwmId, pwmFr, pwmDc, state, actionId, rfId, cmdId, linkId, exeChainId) {
       this.modalBondData.active = true
       this.modalBondData.title = title
       this.modalBondData.id = id
@@ -339,58 +424,51 @@ export default {
       this.modalBondData.type = type
       this.modalBondData.deley = deley
       this.modalBondData.outputId = outputId
-      this.modalBondData.pwms = [],
       this.modalBondData.pwmId = pwmId
       this.modalBondData.pwmFr = pwmFr
       this.modalBondData.pwmDc = pwmDc
       this.modalBondData.state = state
-      this.modalBondData.actions = []
       this.modalBondData.actionId = actionId
+      this.modalBondData.rfId = rfId
+      this.modalBondData.cmdId = cmdId
+      this.modalBondData.linkId = linkId
+      this.modalBondData.exeChainId = exeChainId
+      this.modalBondData.linkedPis = []
       this.modalBondData.errors = []
-      this.modalBondData.outputs = []
-      this.doPosts([
-        this.doQPost('GPIO_Oname').then(datalist => {
-          for (var j = 2; j < (datalist.length - 1); j += 4) {
-            this.modalBondData.outputs.push({
-              id: datalist[j],
-              name: datalist[j + 1]
-            })
-          }
-        }),
-        this.doQPost('GPIO_PWMnames').then(datalist => {
-          for (var j = 2; j < (datalist.length - 1); j += 2) {
-            this.modalBondData.pwms.push({
-              id: datalist[j],
-              name: datalist[j + 1]
-            })
-          }
-        }),
-        this.doQPost('GPIO_ActionsNames').then(datalist => {
-          for (var j = 2; j < (datalist.length - 1); j += 2) {
-            this.modalBondData.actions.push({
-              id: datalist[j],
-              name: datalist[j + 1]
-            })
-          }
-        })
-      ]).catch(err => {
-        this.modalData.errors.push(err.message)
+      if(linkId) this.modalBondData.bondLinked = true
+      else this.modalBondData.bondLinked = false
+      this.reFetchTargetsData(chainId)
+      this.doPost('GetLinkedPis;0').then(datalist => {
+        for (var j = 2; j < (datalist.length - 1); j += 6) {
+          this.modalBondData.linkedPis.push({
+            id: datalist[j],
+            name: datalist[j + 1]
+          })
+        }
+      }).catch(err => {
+          this.modalBondData.errors.push(err.message)
       })
     },
     modalBondAction (deleteO) {
       this.modalBondData.errors = []
       if (!deleteO) {
         if (!this.modalBondData.deley) { this.modalBondData.errors.push('Deley is required !') }
-        if (this.modalBondData.type == 'output' && !this.modalBondData.outputId) { this.modalBondData.errors.push('Output id is required !') }
-        if (this.modalBondData.type == 'pwm' && !this.modalBondData.pwmId) { this.modalBondData.errors.push('Pwm id is required !') }
-        if (this.modalBondData.type == 'action' && !this.modalBondData.actionId) { this.modalBondData.errors.push('Action id is required !') }
+        if (this.modalBondData.type == 'output' && !this.modalBondData.outputId) { this.modalBondData.errors.push('Output id is required !') } else if (this.modalBondData.type == 'pwm' && !this.modalBondData.pwmId) { this.modalBondData.errors.push('Pwm id is required !') } else if (this.modalBondData.type == 'action' && !this.modalBondData.actionId) { this.modalBondData.errors.push('Action id is required !') } else if (this.modalBondData.type == 'rfsend' && !this.modalBondData.rfId) { this.modalBondData.errors.push('Rf transmit target id is required !') } else if (this.modalBondData.type == 'cmd' && !this.modalBondData.cmdId) { this.modalBondData.errors.push('Custom command target id is required !') }
       }
       if (!this.modalBondData.errors.length) {
         let postData = ''
         let target = null
-        if (this.modalBondData.type == 'output') { target = this.modalBondData.outputId } else if (this.modalBondData.type == 'pwm') { target = this.modalBondData.pwmId } else if (this.modalBondData.type == 'action') { target = this.modalBondData.actionId }
-        if (deleteO) { postData = 'GPIO_ChainBondDelete;' + this.modalBondData.id + ';' + this.modalBondData.chainId } else if (this.modalBondData.id === -1) { postData = 'GPIO_ChainBondAdd;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + this.modalBondData.state + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc } else { postData = 'GPIO_ChainBondUpdate;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + this.modalBondData.state + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.id }
-        this.doPost(postData).then(datalist => {
+        let linkName = ''
+        if (this.modalBondData.type == 'output') { target = this.modalBondData.outputId; linkName = this.modalBondData.outputs.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'pwm') { target = this.modalBondData.pwmId; linkName = this.modalBondData.pwms.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'action') { target = this.modalBondData.actionId; linkName = this.modalBondData.actions.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'rfsend') { target = this.modalBondData.rfId; linkName = this.modalBondData.rfCodes.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'cmd') { target = this.modalBondData.cmdId; linkName = this.modalBondData.cmds.find(x => x.id == target).name }
+        else if (this.modalBondData.type == 'chain') { target = this.modalBondData.exeChainId; linkName = this.modalBondData.chains.find(x => x.id == target).name }
+        if (deleteO) { postData = 'GPIO_ChainBondDelete;' + this.modalBondData.id + ';' + this.modalBondData.chainId } 
+        else if (this.modalBondData.id === -1) { postData = 'GPIO_ChainBondAdd;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + this.modalBondData.state + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.linkId + ';' + linkName } 
+        else { postData = 'GPIO_ChainBondUpdate;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + this.modalBondData.state + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.id + ';' + this.modalBondData.linkId + ';' + linkName }
+        this.doPost(postData).then(() => {
           this.getChains()
           this.modalBondData.active = false
         }).catch(err => {
@@ -418,13 +496,18 @@ export default {
         this.modalReorderData.bonds[index + 1] = temp
       }
     },
+    findChain (id){
+      return this.chains.find(chain => {
+        return chain.id == id
+      })
+    },
     modalReorderAction () {
       let lpPlusId = ''
       for (let i = 0; i < this.modalReorderData.bonds.length; i++) {
         lpPlusId += this.modalReorderData.bonds[i].lp + '$' + this.modalReorderData.bonds[i].id
         if (i < (this.modalReorderData.bonds.length - 1))lpPlusId += '$'
       }
-      this.doPost('GPIO_ChainBondsOrder;' + this.modalReorderData.chainId + ';' + lpPlusId).then(datalist => {
+      this.doPost('GPIO_ChainBondsOrder;' + this.modalReorderData.chainId + ';' + lpPlusId).then(() => {
         this.chains[this.modalReorderData.chainIndex].bonds = this.modalReorderData.bonds
         this.modalReorderData.active = false
       }).catch(err => {
@@ -435,15 +518,17 @@ export default {
       this.doPost('GPIO_ChainList').then(datalist => {
         this.$route.meta.error = null
         this.chains = []
-        for (var j = 2; j < (datalist.length - 1); j += 5) {
-          let bondList = datalist[j + 4].split('$')
+        for (var j = 2; j < (datalist.length - 1); j += 6) {
+          let bondList = datalist[j + 5].split('$')
           let bonds = []
-          for (var i = 0; i < (bondList.length - 1); i += 15) {
+          for (var i = 0; i < (bondList.length - 1); i += 23) {
+            let linked = Boolean(parseInt(bondList[i + 19]))
+            let joinedLinkedName = bondList[i + 21] + ':' + bondList[i + 20]
             bonds.push({
               id: parseInt(bondList[i]),
               chainId: parseInt(bondList[i + 1]),
               lp: parseInt(bondList[i + 2]),
-              deley: parseInt(bondList[i + 3]),
+              deley: parseFloat(bondList[i + 3]),
               type: bondList[i + 4],
               actionId: parseInt(bondList[i + 5]),
               outputId: parseInt(bondList[i + 6]),
@@ -452,9 +537,18 @@ export default {
               pwmFr: parseInt(bondList[i + 9]),
               pwmDc: parseInt(bondList[i + 10]),
               pwmSs: parseInt(bondList[i + 11]),
-              outputName: bondList[i + 12],
-              pwmName: bondList[i + 13],
-              actionName: bondList[i + 14]
+              outputName: linked?joinedLinkedName:bondList[i + 12],
+              pwmName: linked?joinedLinkedName:bondList[i + 13],
+              actionName: linked?joinedLinkedName:bondList[i + 14],
+              rfId: parseInt(bondList[i + 15]),
+              rfName: linked?joinedLinkedName:bondList[i + 16],
+              cmdId: parseInt(bondList[i + 17]),
+              cmdName: linked?joinedLinkedName:bondList[i + 18],
+              linkId: parseInt(bondList[i + 19]),
+              linkName: bondList[i + 20],
+              linkedDeviceName: bondList[i + 21],
+              execChainId: parseInt(bondList[i + 22]),
+              execChainName: joinedLinkedName
             })
           }
           bonds = bonds.sort(this.compare)
@@ -462,6 +556,7 @@ export default {
             id: parseInt(datalist[j]),
             status: parseInt(datalist[j + 1]),
             name: datalist[j + 2],
+            countdown: parseInt(datalist[j + 4]),
             bonds: bonds
           })
         }
@@ -481,6 +576,74 @@ export default {
         this.$route.meta.error = err.message
         this.$forceUpdate()
       })
+    },
+    reFetchTargetsData(chainId){
+      this.modalBondData.rfCodes = []
+      this.modalBondData.actions = []
+      this.modalBondData.pwms = []
+      this.modalBondData.cmds = []
+      this.modalBondData.errors = []
+      this.modalBondData.outputs = []
+      this.modalBondData.chains = []
+      let linkedData = ''
+      if(this.modalBondData.linkId&&this.modalBondData.bondLinked)linkedData='CallLinkedPi;' + this.modalBondData.linkId + ';'
+      if(!this.modalBondData.bondLinked||this.modalBondData.linkId)
+        this.doPosts([
+          this.doQPost(linkedData+'GPIO_Oname').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 4) {
+              this.modalBondData.outputs.push({
+                id: datalist[j],
+                name: datalist[j + 1]
+              })
+            }
+          }),
+          this.doQPost(linkedData+'GPIO_PWMnames').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 2) {
+              this.modalBondData.pwms.push({
+                id: datalist[j],
+                name: datalist[j + 1]
+              })
+            }
+          }),
+          this.doQPost(linkedData+'GPIO_ActionsNames').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 2) {
+              this.modalBondData.actions.push({
+                id: datalist[j],
+                name: datalist[j + 1]
+              })
+            }
+          }),
+          this.doQPost(linkedData+'GetRfCodes').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 8) {
+              if (datalist[j + 2] == 'Transmit') {
+                this.modalBondData.rfCodes.push({
+                  id: datalist[j],
+                  name: datalist[j + 1]
+                })
+              }
+            }
+          }),
+          this.doQPost(linkedData+'GetCustomCmds').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 4) {
+              this.modalBondData.cmds.push({
+                id: datalist[j],
+                name: datalist[j + 1]
+              })
+            }
+          }),
+          this.doQPost(linkedData+'Chain_names').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 2) {
+              if (datalist[j] != chainId)
+                this.modalBondData.chains.push({
+                  id: datalist[j],
+                  name: datalist[j + 1]
+                })
+            }
+          })
+        ]).catch(err => {
+          this.modalBondData.errors.push(err.message)
+        })
+
     }
   },
   components: {
@@ -489,11 +652,3 @@ export default {
 }
 </script>
 
-<style>
-.columns {
-    padding-bottom: 120px;
-}
-#autorefresh {
-    width: 75px;
-}
-</style>

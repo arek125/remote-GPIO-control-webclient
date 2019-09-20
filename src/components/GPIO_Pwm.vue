@@ -214,7 +214,7 @@ export default {
       if (!this.modalData.errors.length) {
         let postData = ''
         if (deleteO) { postData = 'Delete_GPIO_pwm;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name } else if (this.modalData.id === -1) { postData = 'Add_GPIO_pwm;' + this.modalData.gpio + ';' + this.modalData.fr + ';' + this.modalData.dc + ';' + this.modalData.name + ';' + (+this.modalData.reverse) + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') } else { postData = 'Edit_GPIO_pwm;' + this.modalData.id + ';' + this.modalData.prevsGpios + ';' + this.modalData.gpio + ';' + this.modalData.fr + ';' + this.modalData.dc + ';' + this.modalData.name + ';' + (+this.modalData.reverse) + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') }
-        this.doPost(postData).then(datalist => {
+        this.doPost(postData).then(() => {
           this.getPwms()
           this.modalData.active = false
         }).catch(err => {
@@ -264,8 +264,8 @@ export default {
       }
     },
     setDCFR (index) {
-      this.doPost('GPIO_PFRDC;' + this.pwms[index].id + ';' + this.pwms[index].gpio + ';' + this.pwms[index].fr + ';' + this.pwms[index].dc + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS'))
-        .then(datalist => {
+      this.doPost('GPIO_PFRDC;' + this.pwms[index].id + ';' + this.pwms[index].gpio + ';' + this.pwms[index].fr + ';' + this.pwms[index].dc + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + this.pwms[index].s_s +";1")
+        .then(() => {
           this.$route.meta.error = null
           this.changeDate = this.$moment.utc().toDate()
           this.pwms[index].prevFr = this.pwms[index].fr
@@ -296,9 +296,6 @@ export default {
 </script>
 
 <style>
-.columns {
-    padding-bottom: 120px;
-}
 .low-width {
     width: 75px;
 }

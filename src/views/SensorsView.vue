@@ -33,7 +33,7 @@ export default {
       this.selectedIds = selectedIds
     },
     whatCol () {
-      if (this.selectedIds.length) { return 'col-12' } else { return 'col-4' }
+      if (this.selectedIds.length) { return 'col-12' } else { return 'col-4 col-xl-6 col-sm-12' }
     }
   }
 }

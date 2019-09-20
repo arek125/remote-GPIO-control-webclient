@@ -27,7 +27,6 @@
 </template>
 
 <script>
-import Error from '@/components/Error.vue'
 
 export default {
   name: 'ServerInfo',
@@ -76,17 +75,7 @@ export default {
         this.$forceUpdate()
       })
     }
-  },
-  components: {
-    Error
   }
 }
 </script>
 
-<style>
-.logs{
-    word-wrap: break-word;
-    word-break: break-all;
-    table-layout: fixed;
-}
-</style>

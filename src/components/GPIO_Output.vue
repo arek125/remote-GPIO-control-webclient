@@ -77,29 +77,31 @@
                         </div>
                     </div>
                     <div v-else class="columns">
-                        <div class="tile tile-centered column" v-bind:class="[col]" v-for="(output,index) in outputs" :key="output.id" >
-                            <div class="tile-icon">
-                                <button v-if="output.type===0" class="btn btn-action btn-lg" v-bind:class="[stateButton(output.state,output.reverse)]" v-on:click="setState(index,output.id,output.gpio,+!output.state,output.reverse)">
-                                    <i class="icon icon-shutdown centered"></i>
-                                </button>
-                                <button v-else-if="output.type===1" class="btn btn-action btn-lg" v-bind:class="[stateButton(output.state,output.reverse)]" v-on:mousedown="output.prevstate = output.state; setState(index,output.id,output.gpio,+!output.state,output.reverse)" v-on:mouseup="setState(index,output.id,output.gpio,output.prevstate,output.reverse)">
-                                    <i class="icon icon-shutdown centered"></i>
-                                </button>
-                            </div>
-                            <div class="tile-content">
-                                <div class="tile-title">{{ output.name }}</div>
-                                <div class="tile-subtitle text-gray">{{ outputDisc(output.gpio,output.reverse,output.type) }}</div>
-                            </div>
-                            <div class="tile-action">
-                                <div class="dropdown dropdown-right">
-                                    <a class="btn btn-link dropdown-toggle" tabindex="0">
-                                        <i class="icon icon-more-vert"></i>
-                                    </a>
-                                    <ul class="menu">
-                                        <li class="menu-item" v-on:click="setState(index,output.id,output.gpio,+!output.reverse,output.reverse)"><a><i class="icon icon-shutdown"></i> On</a></li>
-                                        <li class="menu-item" v-on:click="setState(index,output.id,output.gpio,output.reverse,output.reverse)"><a><i class="icon icon-shutdown"></i> Off</a></li>
-                                        <li class="menu-item" v-on:click="openModal('Edit: '+output.name,output.name,output.gpio,!!output.reverse,output.type,output.id)"><a><i class="icon icon-edit"></i> Edit</a></li>
-                                    </ul>
+                        <div class="column" v-bind:class="[col]" v-for="(output,index) in outputs" :key="output.id" >
+                            <div class="tile tile-centered">
+                                <div class="tile-icon">
+                                    <button v-if="output.type===0" class="btn btn-action btn-lg" v-bind:class="[stateButton(output.state,output.reverse)]" v-on:click="setState(index,output.id,output.gpio,+!output.state,output.reverse)">
+                                        <i class="icon icon-shutdown centered"></i>
+                                    </button>
+                                    <button v-else-if="output.type===1" class="btn btn-action btn-lg" v-bind:class="[stateButton(output.state,output.reverse)]" v-on:mousedown="output.prevstate = output.state; setState(index,output.id,output.gpio,+!output.state,output.reverse)" v-on:mouseup="setState(index,output.id,output.gpio,output.prevstate,output.reverse)">
+                                        <i class="icon icon-shutdown centered"></i>
+                                    </button>
+                                </div>
+                                <div class="tile-content">
+                                    <div class="tile-title">{{ output.name }}</div>
+                                    <div class="tile-subtitle text-gray">{{ outputDisc(output.gpio,output.reverse,output.type) }}</div>
+                                </div>
+                                <div class="tile-action">
+                                    <div class="dropdown dropdown-right">
+                                        <a class="btn btn-link dropdown-toggle" tabindex="0">
+                                            <i class="icon icon-more-vert"></i>
+                                        </a>
+                                        <ul class="menu">
+                                            <li class="menu-item" v-on:click="setState(index,output.id,output.gpio,+!output.reverse,output.reverse)"><a><i class="icon icon-shutdown"></i> On</a></li>
+                                            <li class="menu-item" v-on:click="setState(index,output.id,output.gpio,output.reverse,output.reverse)"><a><i class="icon icon-shutdown"></i> Off</a></li>
+                                            <li class="menu-item" v-on:click="openModal('Edit: '+output.name,output.name,output.gpio,!!output.reverse,output.type,output.id)"><a><i class="icon icon-edit"></i> Edit</a></li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +205,7 @@ export default {
       if (!this.modalData.errors.length) {
         let postData = ''
         if (deleteO) { postData = 'Delete_GPIO_out;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name } else if (this.modalData.id === -1) { postData = 'Add_GPIO_out;' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.type } else { postData = 'Edit_GPIO_out;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.prevsGpios + ';' + this.modalData.type }
-        this.doPost(postData).then(datalist => {
+        this.doPost(postData).then(() => {
           // let datalist = this.parseRes(r.data)
           this.getOutputs()
           this.modalData.active = false
@@ -256,11 +258,3 @@ export default {
 }
 </script>
 
-<style>
-.columns {
-    padding-bottom: 120px;
-}
-#autorefresh {
-    width: 75px;
-}
-</style>

@@ -65,7 +65,7 @@ export default {
   },
   props: ['category'],
   created () {
-    this.dateFrom = this.$moment().subtract(30, 'days').format('YYYY-MM-DD')
+    this.dateFrom = this.$moment().subtract(7, 'days').format('YYYY-MM-DD')
     this.dateTo = this.$moment().add(1, 'days').format('YYYY-MM-DD')
     this.getHistory()
     if (this.$cookies.isKey('hr_arTime')) { this.autoRefreshTime = parseInt(this.$cookies.get('hr_arTime')) }
@@ -114,11 +114,3 @@ export default {
 }
 </script>
 
-<style>
-.filter {
-    margin: 10px;
-}
-#autorefresh {
-    width: 75px;
-}
-</style>

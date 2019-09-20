@@ -4,7 +4,7 @@
     <div class="container" v-else>
       <div class="columns">
         <Chain class="column col-8 col-md-12"/>
-        <History class="column col-4 hide-md" category="chain"/>
+        <History class="column col-4 col-md-12" category="chain"/>
       </div>
     </div>
   </div>

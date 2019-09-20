@@ -4,7 +4,7 @@
     <div class="container" v-else>
       <div class="columns">
         <GPIO_Output class="column col-8 col-md-12"/>
-        <History class="column col-4 hide-md" category="i/o"/>
+        <History class="column col-4 col-md-12" category="i/o"/>
       </div>
     </div>
   </div>

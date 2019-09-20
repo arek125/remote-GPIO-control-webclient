@@ -91,7 +91,8 @@ export default {
       this.loading = true
       return Promise.all(reqs).catch(err => {
         this.$Progress.fail()
-        return err
+        throw Error(err.message)
+        // return err
       }).then(() => {
         this.$Progress.finish()
         this.loading = false
