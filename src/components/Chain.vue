@@ -8,7 +8,7 @@
             <div class="panel-nav">
                 <div class="btn-group btn-group-block float-right">
                     <button class="btn" v-on:click="getChains()"><i class="icon icon-refresh centered"></i></button>
-                    <button class="btn" v-on:click="openChainModal('Add new execution chain','',-1,1)"><i class="icon icon-plus centered"></i></button>
+                    <button class="btn" v-on:click="openChainModal('Add new execution chain','',-1,1,true)"><i class="icon icon-plus centered"></i></button>
                 </div>
             </div>
             <div class="panel-body">
@@ -40,6 +40,12 @@
                                             <p class="text-gray text-italic">-1 infinite, 0 disabled or any number for loop countdown</p>
                                         </div>
                                     </div>
+                                    <div class="form-group">
+                                        <label class="form-switch">
+                                            <input type="checkbox" v-model="modalChainData.keepLogs">
+                                            <i class="form-icon"></i>Keep logs
+                                        </label>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -70,14 +76,14 @@
                                                 <option value="pwm">PWM</option>
                                                 <option value="action">Check and run automated action</option>
                                                 <option value="rfsend">Transmit RF Code</option>
-                                                <option value="cmd">Execude custom command</option>
-                                                <option value="chain">Execude or cancel other chain</option>
+                                                <option value="cmd">Execute custom command</option>
+                                                <option value="chain">Execute or cancel other chain</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="form-group">
                                         <div class="col-3 col-sm-12">
-                                            <label class="form-label" for="deley">Deley(s)</label>
+                                            <label class="form-label" for="deley">Delay(s)</label>
                                         </div>
                                         <div class="col-9 col-sm-12">
                                             <input class="form-input" min="0" type="number" id="deley" placeholder="Single GPIO BCM number" v-model="modalBondData.deley">
@@ -224,12 +230,12 @@
                                     <dt v-for="(bond,index) in modalReorderData.bonds" :key="bond.id">
                                         <button class="btn btn-link" :disabled="index==0" v-on:click="reorder(true,index)"><i class="icon icon-upward"></i></button>
                                         <button class="btn btn-link" :disabled="index==(modalReorderData.bonds.length-1)" v-on:click="reorder(false,index)"><i class="icon icon-downward"></i></button>
-                                        <span v-if="bond.type == 'action'" >{{ bond.lp+'. '+bond.actionName + ' Execude '+ bond.deley+'s'}}</span>
+                                        <span v-if="bond.type == 'action'" >{{ bond.lp+'. '+bond.actionName + ' Execute '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'rfsend'" >{{ bond.lp+'. '+bond.rfName + ' Transmit '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'output'" >{{bond.lp+'. '+bond.outputName+" "+outState(bond.outputState)+' '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'pwm'" >{{bond.lp+'. '+bond.pwmName+" "+pwmState(bond.pwmSs,bond.pwmDc,bond.pwmFr)+' '+ bond.deley+'s'}}</span>
-                                        <span v-else-if="bond.type == 'cmd'" >{{ bond.lp+'. '+bond.cmdName + ' Execude '+ bond.deley+'s'}}</span>
-                                        <span v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execude ':' Cancel ')+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'cmd'" >{{ bond.lp+'. '+bond.cmdName + ' Execute '+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execute ':' Cancel ')+ bond.deley+'s'}}</span>
                                     </dt>
                                 </dl>
                                 <div v-else>No bonds added.</div>
@@ -248,7 +254,7 @@
                         <p class="empty-title h5">There are no chains configured</p>
                         <p class="empty-subtitle">Click the button to configure new</p>
                         <div class="empty-action">
-                            <button class="btn btn-primary" v-on:click="openChainModal('Add new execution chain','',-1,1)"><i class="icon icon-plus centered"></i></button>
+                            <button class="btn btn-primary" v-on:click="openChainModal('Add new execution chain','',-1,1, true)"><i class="icon icon-plus centered"></i></button>
                         </div>
                     </div>
                     <div v-else class="columns">
@@ -258,7 +264,7 @@
                                     <button class="btn btn-action btn-lg" v-on:click="execudeOrCancel(index)" v-bind:class="{'btn-success': !chain.status && chain.bonds.length, 'btn-warning': chain.status, 'btn-code': !chain.status && !chain.bonds.length}" :disabled="!chain.bonds.length">
                                         <i class="icon icon-forward centered" v-bind:class="{'icon-forward': !chain.status, 'icon-stop': chain.status}"></i>
                                     </button>
-                                    <button class="btn btn-link" v-on:click="openChainModal('Edit: '+chain.name,chain.name,chain.id,chain.countdown)">
+                                    <button class="btn btn-link" v-on:click="openChainModal('Edit: '+chain.name,chain.name,chain.id,chain.countdown,chain.keepLogs)">
                                         <i class="icon icon-edit"></i>
                                     </button>
                                     <button class="btn btn-link" v-on:click="openBondModal('Add new chain bond',-1,chain.id,'output',1,-1,-1,600,0,0,-1,-1,-1,0,-1)">
@@ -275,12 +281,12 @@
                                     <div class="tile-subtitle">
                                         <ol class="list" v-if="chain.bonds.length">
                                             <li v-for="(bond) in chain.bonds" :key="bond.id" v-bind:class="{'text-warning': bond.lp == chain.status}" v-on:click="openBondModal('Edit bond lp. '+bond.lp,bond.id,bond.chainId,bond.type,bond.deley,bond.outputId,bond.pwmId,bond.pwmFr,bond.pwmDc,bond.type=='pwm'?bond.pwmSs:bond.outputState,bond.actionId,bond.rfId,bond.cmdId,bond.linkId,bond.execChainId)">
-                                                <button class="btn btn-link" v-if="bond.type == 'action'" >{{ bond.actionName + ' Execude '+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-if="bond.type == 'action'" >{{ bond.actionName + ' Execute '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'output'" >{{bond.outputName+' '+outState(bond.outputState)+' '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'pwm'" >{{bond.pwmName+' '+pwmState(bond.pwmSs,bond.pwmDc,bond.pwmFr)+' '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'rfsend'" >{{ bond.rfName + ' Transmit '+ bond.deley+'s'}}</button>
-                                                <button class="btn btn-link" v-else-if="bond.type == 'cmd'" >{{ bond.cmdName + ' Execude '+ bond.deley+'s'}}</button>
-                                                <button class="btn btn-link" v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execude ':' Cancel ')+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'cmd'" >{{ bond.cmdName + ' Execute '+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execute ':' Cancel ')+ bond.deley+'s'}}</button>
                                             </li>
                                         </ol>
                                         <div v-else>No bonds added.</div>
@@ -318,6 +324,7 @@ export default {
         title: 'New execution chain',
         name: '',
         countdown: 1,
+        keepLogs: true,
         errors: []
       },
       modalBondData: {
@@ -390,11 +397,12 @@ export default {
       }
       return comparison
     },
-    openChainModal (title, name, id, countdown) {
+    openChainModal (title, name, id, countdown, keepLogs) {
       this.modalChainData.active = true
       this.modalChainData.title = title
       this.modalChainData.name = name
       this.modalChainData.countdown = countdown
+      this.modalChainData.keepLogs = keepLogs
       this.modalChainData.id = id
       this.modalChainData.errors = []
     },
@@ -406,8 +414,8 @@ export default {
       if (!this.modalChainData.errors.length) {
         let postData = ''
         if (deleteO) { postData = 'GPIO_ChainDelete;' + this.modalChainData.id } 
-        else if (this.modalChainData.id === -1) { postData = 'GPIO_ChainAdd;' + this.modalChainData.name+";"+this.modalChainData.countdown } 
-        else { postData = 'GPIO_ChainUpdate;' + this.modalChainData.id + ';' + this.modalChainData.name+";"+this.modalChainData.countdown }
+        else if (this.modalChainData.id === -1) { postData = 'GPIO_ChainAdd;' + this.modalChainData.name+";"+this.modalChainData.countdown+";"+(+this.modalChainData.keepLogs) } 
+        else { postData = 'GPIO_ChainUpdate;' + this.modalChainData.id + ';' + this.modalChainData.name+";"+this.modalChainData.countdown+";"+(+this.modalChainData.keepLogs) }
         this.doPost(postData).then(() => {
           this.getChains()
           this.modalChainData.active = false
@@ -518,8 +526,8 @@ export default {
       this.doPost('GPIO_ChainList').then(datalist => {
         this.$route.meta.error = null
         this.chains = []
-        for (var j = 2; j < (datalist.length - 1); j += 6) {
-          let bondList = datalist[j + 5].split('$')
+        for (var j = 2; j < (datalist.length - 1); j += 7) {
+          let bondList = datalist[j + 6].split('$')
           let bonds = []
           for (var i = 0; i < (bondList.length - 1); i += 23) {
             let linked = Boolean(parseInt(bondList[i + 19]))
@@ -557,6 +565,7 @@ export default {
             status: parseInt(datalist[j + 1]),
             name: datalist[j + 2],
             countdown: parseInt(datalist[j + 4]),
+            keepLogs: !!+datalist[j + 5],
             bonds: bonds
           })
         }
@@ -568,7 +577,7 @@ export default {
     },
     execudeOrCancel (index) {
       let postData = ''
-      if (!this.chains[index].status) { postData = 'GPIO_ChainExecute;' + this.chains[index].id } else { postData = 'GPIO_ChainCancel;' + this.chains[index].id }
+      if (!this.chains[index].status) { postData = 'GPIO_ChainExecute;' + this.chains[index].id+ ';'+ (+this.chains[index].keepLogs)  } else { postData = 'GPIO_ChainCancel;' + this.chains[index].id }
       this.doPost(postData).then(datalist => {
         this.$route.meta.error = null
         if (datalist[1] == 'GPIO_ChainExecute') { this.chains[index].status = 1 } else if (datalist[1] == 'GPIO_ChainCancel') { this.chains[index].status = 0 }

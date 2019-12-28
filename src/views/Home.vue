@@ -103,7 +103,7 @@
               <button class="btn" v-on:click="logsModalActive = true">Server Logs</button>
               <button class="btn" v-on:click="openLink('https://github.com/arek125/remote-GPIO-control-server/releases')">Change log</button>
               <button class="btn" v-on:click="openLink('https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=arek125%40gmail%2ecom&lc=PL&item_name=RGC%20FAMILY&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest')">Donate</button>
-              <button class="btn" v-on:click="openLink('https://github.com/arek125/remote-GPIO-control-server/issues')">Issue raport</button>
+              <button class="btn" v-on:click="openLink('https://github.com/arek125/remote-GPIO-control-server/issues')">Issue report</button>
               <button class="btn" v-on:click="comAndReload('ServerUpdateFromGH', 60, 'Perform server update now ?')" v-if="updateAvalible">Update to {{newTagName}} ready !</button>
             </div>
           </div>

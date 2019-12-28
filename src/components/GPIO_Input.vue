@@ -8,7 +8,7 @@
             <div class="panel-nav">
                 <div class="btn-group btn-group-block float-right">
                     <button class="btn" v-on:click="getInputs()"><i class="icon icon-refresh centered"></i></button>
-                    <button class="btn" v-on:click="openModal('Add new input','','',false,0,-1,-1)"><i class="icon icon-plus centered"></i></button>
+                    <button class="btn" v-on:click="openModal('Add new input','','',false,'inloop',-1,1,0.05)"><i class="icon icon-plus centered"></i></button>
                 </div>
             </div>
             <div class="panel-body">
@@ -44,6 +44,40 @@
                                             <input type="checkbox" v-model="modalData.reverse">
                                             <i class="form-icon"></i>Reverse
                                         </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Resistor</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                            <select class="form-select" id="type" v-model="modalData.resistor">
+                                                <option value="1">Pull up</option>
+                                                <option value="2">Pull down</option>
+                                                <option value="0">None</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Method</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                            <select class="form-select" id="type" v-model="modalData.method">
+                                                <option value="inloop">Loop monitoring</option>
+                                                <option value="ined">Edge detection</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-3 col-sm-12">
+                                            <label v-if="modalData.method == 'inloop'" class="form-label" for="rr">CPU rest time (s)</label>
+                                            <label v-else class="form-label" for="rr">Bounce time (s)</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                            <input class="form-input" type="number" step="0.01" id="rr" min="0.01" v-model="modalData.time">
+                                            <p v-if="modalData.method == 'inloop'" class="text-gray text-italic">The smaller the value, the faster the response, but the greater the CPU demand.</p>
+                                            <p v-else class="text-gray text-italic">Software debouncing for switch bounce.</p>
+                                        </div>
                                     </div>
                                     <!-- <div class="form-group">
                                         <div class="col-3 col-sm-12">
@@ -86,7 +120,7 @@
                         <p class="empty-title h5">There are no inputs configured</p>
                         <p class="empty-subtitle">Click the button to configure new</p>
                         <div class="empty-action">
-                            <button class="btn btn-primary" v-on:click="openModal('Add new input','','',false,0,-1,-1)"><i class="icon icon-plus centered"></i></button>
+                            <button class="btn btn-primary" v-on:click="openModal('Add new input','','',false,'inloop',-1,1,0.05)"><i class="icon icon-plus centered"></i></button>
                         </div>
                     </div>
                     <div v-else class="columns">
@@ -99,10 +133,10 @@
                                 </div>
                                 <div class="tile-content">
                                     <div class="tile-title">{{ input.name }}</div>
-                                    <div class="tile-subtitle text-gray">{{ inputDisc(input.gpio,input.reverse,input.bindType) }}</div>
+                                    <div class="tile-subtitle text-gray">{{ inputDisc(input.gpio,input.reverse,input.method) }}</div>
                                 </div>
                                 <div class="tile-action">
-                                    <button class="btn btn-link" v-on:click="openModal('Edit: '+input.name,input.name,input.gpio,!!input.reverse,input.bindType,input.id,input.bindId)">
+                                    <button class="btn btn-link" v-on:click="openModal('Edit: '+input.name,input.name,input.gpio,!!input.reverse,input.method,input.id,input.resistor,input.time)">
                                         <i class="icon icon-edit"></i>
                                     </button>
                                 </div>
@@ -140,8 +174,9 @@ export default {
         gpio: '',
         prevsGpios: '',
         reverse: false,
-        bindType: 0,
-        bindId: -1,
+        resistor: "1",
+        method: "inloop",
+        time: 0.05,
         errors: [],
         allUsedPins: [],
         outputs: []
@@ -173,15 +208,16 @@ export default {
         }, (this.autoRefreshTime * 1000))
       }
     },
-    openModal (title, name, gpio, reverse, bindType, id, bindId) {
+    openModal (title, name, gpio, reverse, method, id, resistor, time) {
       this.modalData.active = true
       this.modalData.title = title
       this.modalData.name = name
       this.modalData.gpio = gpio
       this.modalData.prevsGpios = gpio
       this.modalData.reverse = reverse
-      this.modalData.bindType = bindType
-      this.modalData.bindId = bindId
+      this.modalData.method = method
+      this.modalData.resistor = resistor
+      this.modalData.time = time
       this.modalData.id = id
       this.modalData.allUsedPins = []
       this.modalData.errors = []
@@ -217,15 +253,15 @@ export default {
             }
           }
         }
-        if (this.modalData.bindType > 0 && (isNaN(this.modalData.bindId) || this.modalData.bindId == '' || this.modalData.bindId == null || this.modalData.bindId == -1)) {
-          this.modalData.errors.push('Binded output is required with this type !')
-        }
+        // if (this.modalData.bindType > 0 && (isNaN(this.modalData.bindId) || this.modalData.bindId == '' || this.modalData.bindId == null || this.modalData.bindId == -1)) {
+        //   this.modalData.errors.push('Binded output is required with this type !')
+        // }
       }
       if (!this.modalData.errors.length) {
         let postData = ''
-        if (deleteO) { postData = 'Delete_GPIO_out;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name } 
-        else if (this.modalData.id === -1) { postData = 'Add_GPIO_in;' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.bindId + ';' + this.modalData.bindType } 
-        else { postData = 'Edit_GPIO_in;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.bindId + ';' + this.modalData.bindType + ';' + this.modalData.prevsGpios }
+        if (deleteO) { postData = 'Delete_GPIO_out;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name+  ';' + this.modalData.method } 
+        else if (this.modalData.id === -1) { postData = 'Add_GPIO_in;' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.time + ';' + this.modalData.resistor + ';' + this.modalData.method } 
+        else { postData = 'Edit_GPIO_in;' + this.modalData.id + ';' + this.modalData.gpio + ';' + this.modalData.name + ';' + this.$moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS') + ';' + (+this.modalData.reverse) + ';' + this.modalData.time + ';' + this.modalData.resistor + ';' + this.modalData.prevsGpios + ';' + this.modalData.method }
         this.doPost(postData).then(() => {
           this.getInputs()
           this.modalData.active = false
@@ -234,10 +270,10 @@ export default {
         })
       }
     },
-    inputDisc (gpio, reverse, type) {
+    inputDisc (gpio, reverse, method) {
       let disc = 'GPIO: ' + gpio
-      if (type == 1)disc += '(bo)'
-      else if (type == 2)disc += '(bp)'
+      if (method == 'inloop')disc += '(l)'
+      else if (method == 'ined')disc += '(e)'
       if (reverse)disc += '(r)'
       return disc
     },
@@ -245,15 +281,16 @@ export default {
       this.doPost('GPIO_Ilist').then(datalist => {
         this.$route.meta.error = null
         this.inputs = []
-        for (var j = 2; j < (datalist.length - 1); j = j + 7) {
+        for (var j = 2; j < (datalist.length - 1); j = j + 8) {
           this.inputs.push({
             id: parseInt(datalist[j]),
             gpio: parseInt(datalist[j + 1]),
             state: parseInt(datalist[j + 2]),
             name: datalist[j + 3],
             reverse: parseInt(datalist[j + 4]),
-            bindId: parseInt(datalist[j + 5]),
-            bindType: parseInt(datalist[j + 6])
+            time: parseFloat(datalist[j + 5])/1000,
+            resistor: parseInt(datalist[j + 6]),
+            method: datalist[j + 7],
           })
         }
         this.updateDate = this.$moment().format('YYYY-MM-DD HH:mm:ss.SSS')
