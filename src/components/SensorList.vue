@@ -203,7 +203,7 @@ export default {
     setSelection (selected, id, unit) {
       if (selected && this.selectedSensors.length == 0) { this.selectedUnit = unit } else if (!selected && this.selectedSensors.length == 1) { this.selectedUnit = 'any' }
       if (selected && this.selectedSensors.indexOf(id) == -1) { this.selectedSensors.push(id) } else if (!selected && this.selectedSensors.indexOf(id) > -1) { this.selectedSensors.splice(this.selectedSensors.indexOf(id), 1) }
-      this.$emit('selectionChange', this.selectedSensors)
+      this.$emit('selection-change', this.selectedSensors)
     },
     openModal (title, name, id, historyRefresh, historyKeep, type, unit, gpio, dataName, cmdId) {
       this.modalData.active = true

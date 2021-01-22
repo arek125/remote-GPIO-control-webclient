@@ -3,7 +3,7 @@
     <Error v-if="$route.meta.error !== null" v-on:close-err="$route.meta.error = null;$forceUpdate()" v-bind:error-message="$route.meta.error"/>
     <div class="container" v-else>
       <div class="columns">
-        <SensorList class="column" v-bind:class="{ 'col-4': selectedIds.length, 'col-12': !selectedIds.length }" v-bind:col="whatCol()" v-on:selectionChange="selectedSensorsChange($event)"/>
+        <SensorList class="column" v-bind:class="{ 'col-4': selectedIds.length, 'col-12': !selectedIds.length }" v-bind:col="whatCol()" v-on:selection-change="selectedSensorsChange($event)"/>
         <SensorsHistory class="column col-8" v-if="selectedIds.length" v-bind:sensorsIds="selectedIds"/>
       </div>
     </div>

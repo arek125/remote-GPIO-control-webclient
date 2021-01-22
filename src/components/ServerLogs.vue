@@ -64,11 +64,12 @@ export default {
       this.doPost('Server_logs_JSON').then(datalist => {
         this.logs = []
         for (let i = 2; i < datalist.length; i += 3) {
-          this.logs.push({
-            time: this.$moment(parseInt(datalist[i]) / 1000).format('YYYY-MM-DD HH:mm:ss'),
-            priority: this.priorityParse(parseInt(datalist[i + 1])),
-            message: datalist[i + 2]
-          })
+          if(datalist[i])
+            this.logs.push({
+              time: this.$moment(parseInt(datalist[i]) / 1000).format('YYYY-MM-DD HH:mm:ss'),
+              priority: this.priorityParse(parseInt(datalist[i + 1])),
+              message: datalist[i + 2]
+            })
         }
       }).catch(err => {
         this.$route.meta.error = err.message

@@ -8,7 +8,7 @@
             <div class="panel-nav">
                 <div class="btn-group btn-group-block float-right">
                     <button class="btn" v-on:click="getRfCodes()"><i class="icon icon-refresh centered"></i></button>
-                    <button class="btn" v-on:click="openModal(-1,'Add new RF code: ','',(rx)?'Recive':'Transmit','',350,1,(tx)?10:'',24)"><i class="icon icon-plus centered"></i></button>
+                    <button class="btn" v-on:click="openModal(-1,'Add new RF code: ','',(rx)?'Recive':'Transmit','',350,1,(tx)?10:10,24)"><i class="icon icon-plus centered"></i></button>
                 </div>
             </div>
             <div class="panel-body">

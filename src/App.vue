@@ -19,6 +19,7 @@
         <router-link class="nav-item" exact-active-class="active" tag="li" to="/sensors"><a>Sensors</a></router-link>
         <router-link class="nav-item" exact-active-class="active" tag="li" to="/rf"><a>RF Tx/Rx</a></router-link>
         <router-link class="nav-item" exact-active-class="active" tag="li" to="/cmds"><a>Custom commands</a></router-link>
+        <router-link class="nav-item" exact-active-class="active" tag="li" to="/vars"><a>Variables / rgc devices</a></router-link>
         <div class="divider"></div>
         <router-link v-if="$route.meta.protected && !$cookies.isKey('session')" class="nav-item" active-class="active" tag="li" to="/login"><a>Login</a></router-link>
         <li v-else-if="$route.meta.protected && $cookies.isKey('session')" class="nav-item" v-on:click="$cookies.remove('session');$cookies.remove('encKey');$forceUpdate()"><a href="">Logout</a></li>
@@ -39,8 +40,8 @@ import crypt from './mixins/crypt'
 import globals from './mixins/globals'
 import VueProgressBar from 'vue-progressbar'
 import moment from 'vue-moment'
-import axios from 'axios'
-import VueAxios from 'vue-axios'
+//import axios from 'axios'
+//import VueAxios from 'vue-axios'
 
 Vue.mixin(crypt)
 Vue.mixin(globals)
@@ -50,7 +51,7 @@ Vue.use(VueProgressBar, {
   height: '2px'
 })
 Vue.use(moment)
-Vue.use(VueAxios, axios)
+//Vue.use(VueAxios, axios)
 export default {
   data () {
     return {

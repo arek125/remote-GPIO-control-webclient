@@ -33,7 +33,7 @@
                                     </div>
                                     <div class="form-group">
                                         <div class="col-3 col-sm-12">
-                                            <label class="form-label" for="countdown">Loop countdown</label>
+                                            <label class="form-label" for="countdown">Execution countdown</label>
                                         </div>
                                         <div class="col-9 col-sm-12">
                                             <input class="form-input" type="number" id="countdown"  v-model="modalChainData.countdown">
@@ -78,6 +78,9 @@
                                                 <option value="rfsend">Transmit RF Code</option>
                                                 <option value="cmd">Execute custom command</option>
                                                 <option value="chain">Execute or cancel other chain</option>
+                                                <option value="var">Set global variable</option>
+                                                <option value="action_noe">Set number of executions of automated action</option>
+                                                <option value="chain_ec">Set chain execution countdown</option>
                                             </select>
                                         </div>
                                     </div>
@@ -179,7 +182,64 @@
                                             <p class="form-input-hint" v-show="!modalBondData.chains.length && !loading">Add chains to make them pickable here.</p>
                                         </div>
                                     </div>
-                                    <div class="form-group" v-show="modalBondData.type != 'action' && modalBondData.type != 'rfsend' && modalBondData.type != 'cmd'">
+                                    <div class="form-group" :class="{'has-error': !modalBondData.vars.length}" v-else-if="modalBondData.type == 'var'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Set value of</label>
+                                        </div>
+                                        <div class="col-4 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.varId" @change="modalBondData.selectedVarIndex = $event.target.selectedIndex">
+                                                <option v-for="_var in modalBondData.vars" :key="_var.id" :value="_var.id">{{ _var.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.vars.length && !loading">Add global variables to make them pickable here.</p>
+                                        </div>
+                                        <div class="col-1 col-sm-12" style="text-align: center; padding-top: 5px;"> eq </div>
+                                        <div v-if="modalBondData.vars.length" class="col-4 col-sm-12" >
+                                            <input v-if="modalBondData.vars[modalBondData.selectedVarIndex].type == 'String'" class="form-input" type="text" id="val" placeholder="Default value" v-model="modalBondData.varValue">
+                                            <input v-else-if="modalBondData.vars[modalBondData.selectedVarIndex].type == 'Date'" class="form-input" type="datetime-local" id="val" v-model="modalBondData.varValue">
+                                            <input v-else-if="modalBondData.vars[modalBondData.selectedVarIndex].type == 'Time'" class="form-input" type="time" id="val" v-model="modalBondData.varValue">
+                                            <input v-else class="form-input" type="number" id="val" v-model="modalBondData.varValue">
+                                        </div>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !modalBondData.actions.length}" v-else-if="modalBondData.type == 'action_noe'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Action target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.actionId">
+                                                <option v-for="action in modalBondData.actions" :key="action.id" :value="action.id">{{ action.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.actions.length && !loading">Add actions to make them pickable here.</p>
+                                        </div>
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="noe">Number of executions</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                          <input class="form-input" type="number" id="noe" min="-1" v-model="modalBondData.actionNOE">
+                                          <p class="text-gray text-italic">-1 unlimited, 0 disabled or any number for execution countdown</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !modalBondData.chains.length}" v-else-if="modalBondData.type == 'chain_ec'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Chain target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalBondData.exeChainId">
+                                                <option v-for="chain in modalBondData.chains" :key="chain.id" :value="chain.id">{{ chain.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalBondData.chains.length && !loading">Add chains to make them pickable here.</p>
+                                        </div>
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="ec">Execution countdown</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                          <input class="form-input" type="number" id="ec" min="-1" v-model="modalBondData.chainEC">
+                                          <p class="text-gray text-italic">-1 infinite, 0 disabled or any number for loop countdown</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" v-show="modalBondData.type == 'output' || modalBondData.type == 'pwm' || modalBondData.type == 'chain'">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label" for="state">Set state</label>
                                         </div>
@@ -235,7 +295,10 @@
                                         <span v-else-if="bond.type == 'output'" >{{bond.lp+'. '+bond.outputName+" "+outState(bond.outputState)+' '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'pwm'" >{{bond.lp+'. '+bond.pwmName+" "+pwmState(bond.pwmSs,bond.pwmDc,bond.pwmFr)+' '+ bond.deley+'s'}}</span>
                                         <span v-else-if="bond.type == 'cmd'" >{{ bond.lp+'. '+bond.cmdName + ' Execute '+ bond.deley+'s'}}</span>
-                                        <span v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execute ':' Cancel ')+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'chain'" >{{ bond.lp+'. '+( bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execute ':' Cancel ')+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'var'" >{{ bond.lp+'. '+bond.varName + ' = '+bond.varValue + " "+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'action_noe'" >{{ bond.actionName +' N.O.E. = '+bond.actionNOE+' '+ bond.deley+'s'}}</span>
+                                        <span v-else-if="bond.type == 'chain_ec'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+' E.C. = '+bond.chainEC+ ' ' + bond.deley+'s'}}</span>
                                     </dt>
                                 </dl>
                                 <div v-else>No bonds added.</div>
@@ -280,16 +343,20 @@
                                     </div>
                                     <div class="tile-subtitle">
                                         <ol class="list" v-if="chain.bonds.length">
-                                            <li v-for="(bond) in chain.bonds" :key="bond.id" v-bind:class="{'text-warning': bond.lp == chain.status}" v-on:click="openBondModal('Edit bond lp. '+bond.lp,bond.id,bond.chainId,bond.type,bond.deley,bond.outputId,bond.pwmId,bond.pwmFr,bond.pwmDc,bond.type=='pwm'?bond.pwmSs:bond.outputState,bond.actionId,bond.rfId,bond.cmdId,bond.linkId,bond.execChainId)">
+                                            <li v-for="(bond) in chain.bonds" :key="bond.id" v-bind:class="{'text-warning': bond.lp == chain.status}" v-on:click="openBondModal('Edit bond lp. '+bond.lp,bond.id,bond.chainId,bond.type,bond.deley,bond.outputId,bond.pwmId,bond.pwmFr,bond.pwmDc,bond.type=='pwm'?bond.pwmSs:bond.outputState,bond.actionId,bond.rfId,bond.cmdId,bond.linkId,bond.execChainId,bond.varId,bond.varValue,bond.actionNOE,bond.chainEC)">
                                                 <button class="btn btn-link" v-if="bond.type == 'action'" >{{ bond.actionName + ' Execute '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'output'" >{{bond.outputName+' '+outState(bond.outputState)+' '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'pwm'" >{{bond.pwmName+' '+pwmState(bond.pwmSs,bond.pwmDc,bond.pwmFr)+' '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'rfsend'" >{{ bond.rfName + ' Transmit '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'cmd'" >{{ bond.cmdName + ' Execute '+ bond.deley+'s'}}</button>
                                                 <button class="btn btn-link" v-else-if="bond.type == 'chain'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+(bond.outputState?' Execute ':' Cancel ')+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'var'" >{{ bond.varName + ' = '+ bond.varValue +' '+bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'action_noe'" >{{ bond.actionName +' N.O.E. = '+bond.actionNOE+' '+ bond.deley+'s'}}</button>
+                                                <button class="btn btn-link" v-else-if="bond.type == 'chain_ec'" >{{(bond.linkId?bond.execChainName:findChain(bond.execChainId).name)+' E.C. = '+bond.chainEC+ ' ' + bond.deley+'s'}}</button>
                                             </li>
                                         </ol>
                                         <div v-else>No bonds added.</div>
+                                        <span class="float-right text-gray">E.C.: {{chain.countdown}}</span>
                                     </div>
                                 </div>
                             </div>
@@ -344,6 +411,7 @@ export default {
         state: 0,
         actions: [],
         actionId: -1,
+        actionNOE: -1,
         rfId: -1,
         rfCodes: [],
         cmdId: -1,
@@ -351,7 +419,12 @@ export default {
         linkId: 0,
         linkedPis: [],
         exeChainId: -1,
+        chainEC: 1,
         chains: [],
+        vars: [],
+        varId: -1,
+        varValue: "",
+        selectedVarIndex: 0,
         errors: []
       },
       modalReorderData: {
@@ -424,7 +497,7 @@ export default {
         })
       }
     },
-    openBondModal (title, id, chainId, type, deley, outputId, pwmId, pwmFr, pwmDc, state, actionId, rfId, cmdId, linkId, exeChainId) {
+    openBondModal (title, id, chainId, type, deley, outputId, pwmId, pwmFr, pwmDc, state, actionId, rfId, cmdId, linkId, exeChainId, varId, varValue, actionNOE, chainEC) {
       this.modalBondData.active = true
       this.modalBondData.title = title
       this.modalBondData.id = id
@@ -442,10 +515,17 @@ export default {
       this.modalBondData.linkId = linkId
       this.modalBondData.exeChainId = exeChainId
       this.modalBondData.linkedPis = []
+      this.modalBondData.vars = []
+      this.modalBondData.varId = varId
+      this.modalBondData.varValue = varValue
+      this.modalBondData.actionNOE = actionNOE
+      this.modalBondData.chainEC = chainEC
       this.modalBondData.errors = []
       if(linkId) this.modalBondData.bondLinked = true
       else this.modalBondData.bondLinked = false
-      this.reFetchTargetsData(chainId)
+      this.reFetchTargetsData(chainId).then(()=>{
+        if(varId)this.modalBondData.selectedVarIndex = this.modalBondData.vars.findIndex(el=>el.id == varId)
+      })
       this.doPost('GetLinkedPis;0').then(datalist => {
         for (var j = 2; j < (datalist.length - 1); j += 6) {
           this.modalBondData.linkedPis.push({
@@ -461,21 +541,32 @@ export default {
       this.modalBondData.errors = []
       if (!deleteO) {
         if (!this.modalBondData.deley) { this.modalBondData.errors.push('Deley is required !') }
-        if (this.modalBondData.type == 'output' && !this.modalBondData.outputId) { this.modalBondData.errors.push('Output id is required !') } else if (this.modalBondData.type == 'pwm' && !this.modalBondData.pwmId) { this.modalBondData.errors.push('Pwm id is required !') } else if (this.modalBondData.type == 'action' && !this.modalBondData.actionId) { this.modalBondData.errors.push('Action id is required !') } else if (this.modalBondData.type == 'rfsend' && !this.modalBondData.rfId) { this.modalBondData.errors.push('Rf transmit target id is required !') } else if (this.modalBondData.type == 'cmd' && !this.modalBondData.cmdId) { this.modalBondData.errors.push('Custom command target id is required !') }
+        if (this.modalBondData.type == 'output' && !this.modalBondData.outputId) { this.modalBondData.errors.push('Output id is required !') } 
+        else if (this.modalBondData.type == 'pwm' && !this.modalBondData.pwmId) { this.modalBondData.errors.push('Pwm id is required !') } 
+        else if ((this.modalBondData.type == 'action' || this.modalBondData.type == 'action_noe') && !this.modalBondData.actionId) { this.modalBondData.errors.push('Action id is required !') } 
+        else if (this.modalBondData.type == 'rfsend' && !this.modalBondData.rfId) { this.modalBondData.errors.push('Rf transmit target id is required !') } 
+        else if (this.modalBondData.type == 'cmd' && !this.modalBondData.cmdId) { this.modalBondData.errors.push('Custom command target id is required !') } 
+        else if ((this.modalBondData.type == 'chain' || this.modalBondData.type == 'chain_ec') && !this.modalBondData.exeChainId){ this.modalBondData.errors.push('Chain target id is required !') } 
+        else if (this.modalBondData.type == 'var' && !this.modalBondData.varId) { this.modalBondData.errors.push('Variable target id is required !') } 
       }
       if (!this.modalBondData.errors.length) {
         let postData = ''
         let target = null
+        let value = null
         let linkName = ''
-        if (this.modalBondData.type == 'output') { target = this.modalBondData.outputId; linkName = this.modalBondData.outputs.find(x => x.id == target).name } 
-        else if (this.modalBondData.type == 'pwm') { target = this.modalBondData.pwmId; linkName = this.modalBondData.pwms.find(x => x.id == target).name } 
-        else if (this.modalBondData.type == 'action') { target = this.modalBondData.actionId; linkName = this.modalBondData.actions.find(x => x.id == target).name } 
-        else if (this.modalBondData.type == 'rfsend') { target = this.modalBondData.rfId; linkName = this.modalBondData.rfCodes.find(x => x.id == target).name } 
-        else if (this.modalBondData.type == 'cmd') { target = this.modalBondData.cmdId; linkName = this.modalBondData.cmds.find(x => x.id == target).name }
-        else if (this.modalBondData.type == 'chain') { target = this.modalBondData.exeChainId; linkName = this.modalBondData.chains.find(x => x.id == target).name }
+        if (this.modalBondData.type == 'output') { target = this.modalBondData.outputId; value = this.modalBondData.state; linkName = this.modalBondData.outputs.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'pwm') { target = this.modalBondData.pwmId; value = this.modalBondData.state; linkName = this.modalBondData.pwms.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'action') { target = this.modalBondData.actionId; value = this.modalBondData.state; linkName = this.modalBondData.actions.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'rfsend') { target = this.modalBondData.rfId; value = this.modalBondData.state; linkName = this.modalBondData.rfCodes.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'cmd') { target = this.modalBondData.cmdId; value = this.modalBondData.state; linkName = this.modalBondData.cmds.find(x => x.id == target).name }
+        else if (this.modalBondData.type == 'chain') { target = this.modalBondData.exeChainId; value = this.modalBondData.state; linkName = this.modalBondData.chains.find(x => x.id == target).name }
+        else if (this.modalBondData.type == 'var') { target = this.modalBondData.varId; value = this.modalBondData.varValue; linkName = this.modalBondData.vars.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'action_noe') { target = this.modalBondData.actionId; value = this.modalBondData.actionNOE; linkName = this.modalBondData.actions.find(x => x.id == target).name } 
+        else if (this.modalBondData.type == 'chain_ec') { target = this.modalBondData.exeChainId; value = this.modalBondData.chainEC; linkName = this.modalBondData.chains.find(x => x.id == target).name }
+
         if (deleteO) { postData = 'GPIO_ChainBondDelete;' + this.modalBondData.id + ';' + this.modalBondData.chainId } 
-        else if (this.modalBondData.id === -1) { postData = 'GPIO_ChainBondAdd;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + this.modalBondData.state + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.linkId + ';' + linkName } 
-        else { postData = 'GPIO_ChainBondUpdate;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + this.modalBondData.state + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.id + ';' + this.modalBondData.linkId + ';' + linkName }
+        else if (this.modalBondData.id === -1) { postData = 'GPIO_ChainBondAdd;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + value + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.linkId + ';' + linkName } 
+        else { postData = 'GPIO_ChainBondUpdate;' + this.modalBondData.chainId + ';' + this.modalBondData.type + ';' + this.modalBondData.deley + ';' + target + ';' + value + ';' + this.modalBondData.pwmFr + ';' + this.modalBondData.pwmDc + ';' + this.modalBondData.id + ';' + this.modalBondData.linkId + ';' + linkName }
         this.doPost(postData).then(() => {
           this.getChains()
           this.modalBondData.active = false
@@ -529,7 +620,7 @@ export default {
         for (var j = 2; j < (datalist.length - 1); j += 7) {
           let bondList = datalist[j + 6].split('$')
           let bonds = []
-          for (var i = 0; i < (bondList.length - 1); i += 23) {
+          for (var i = 0; i < (bondList.length - 1); i += 28) {
             let linked = Boolean(parseInt(bondList[i + 19]))
             let joinedLinkedName = bondList[i + 21] + ':' + bondList[i + 20]
             bonds.push({
@@ -556,7 +647,12 @@ export default {
               linkName: bondList[i + 20],
               linkedDeviceName: bondList[i + 21],
               execChainId: parseInt(bondList[i + 22]),
-              execChainName: joinedLinkedName
+              execChainName: joinedLinkedName,
+              varId: parseInt(bondList[i + 23]),
+              varValue: bondList[i + 24],
+              varName: linked?joinedLinkedName:bondList[i + 25],
+              actionNOE: bondList[i + 26],
+              chainEC: bondList[i + 27]
             })
           }
           bonds = bonds.sort(this.compare)
@@ -586,7 +682,7 @@ export default {
         this.$forceUpdate()
       })
     },
-    reFetchTargetsData(chainId){
+    reFetchTargetsData(){
       this.modalBondData.rfCodes = []
       this.modalBondData.actions = []
       this.modalBondData.pwms = []
@@ -594,10 +690,11 @@ export default {
       this.modalBondData.errors = []
       this.modalBondData.outputs = []
       this.modalBondData.chains = []
+      this.modalBondData.vars = []
       let linkedData = ''
       if(this.modalBondData.linkId&&this.modalBondData.bondLinked)linkedData='CallLinkedPi;' + this.modalBondData.linkId + ';'
       if(!this.modalBondData.bondLinked||this.modalBondData.linkId)
-        this.doPosts([
+        return this.doPosts([
           this.doQPost(linkedData+'GPIO_Oname').then(datalist => {
             for (var j = 2; j < (datalist.length - 1); j += 4) {
               this.modalBondData.outputs.push({
@@ -642,11 +739,20 @@ export default {
           }),
           this.doQPost(linkedData+'Chain_names').then(datalist => {
             for (var j = 2; j < (datalist.length - 1); j += 2) {
-              if (datalist[j] != chainId)
-                this.modalBondData.chains.push({
-                  id: datalist[j],
-                  name: datalist[j + 1]
-                })
+              // if (datalist[j] != chainId)
+              this.modalBondData.chains.push({
+                id: datalist[j],
+                name: datalist[j + 1]
+              })
+            }
+          }),
+          this.doQPost(linkedData+'GetGlobalVars').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 5) {
+              this.modalBondData.vars.push({
+                id: datalist[j],
+                name: datalist[j + 1],
+                type: datalist[j + 3]
+              })
             }
           })
         ]).catch(err => {

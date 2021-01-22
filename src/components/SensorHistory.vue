@@ -115,7 +115,7 @@ export default {
   },
   watch: {
     sensorsIds: {
-      handler: function (newVal, oldVal) {
+      handler: function (newVal) { //,oldVal
         let idArray = ''
         for (let i = 0; i < newVal.length; i++) {
           idArray += "'" + newVal[i] + "'"

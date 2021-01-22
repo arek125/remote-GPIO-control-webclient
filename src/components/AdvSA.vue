@@ -42,6 +42,9 @@
                                                 <option value="chain">Chain</option>
                                                 <option value="rfsend">Transmit RF Code</option>
                                                 <option value="cmd">Execude custom command</option>
+                                                <option value="var">Set global variable</option>
+                                                <option value="action_noe">Set number of executions of automated action</option>
+                                                <option value="chain_ec">Set chain execution countdown</option>
                                             </select>
                                         </div>
                                     </div>
@@ -69,7 +72,7 @@
                                             <p class="form-input-hint" v-show="!modalActionData.pwms.length && !loading">Add PWM's to make them pickable here.</p>
                                         </div>
                                     </div>
-                                    <div class="form-group" :class="{'has-error': !modalActionData.chains.length}" v-else-if="modalActionData.type == 'chain'">
+                                    <div class="form-group" :class="{'has-error': !modalActionData.chains.length}" v-else-if="modalActionData.type == 'chain' || modalActionData.type == 'chain_ec'">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label" for="chain">Chain target</label>
                                         </div>
@@ -79,6 +82,13 @@
                                             </select>
                                             <i class="form-icon" :class="{'loading': loading}"></i>
                                             <p class="form-input-hint" v-show="!modalActionData.chains.length && !loading">Add chains to make them pickable here.</p>
+                                        </div>
+                                        <div class="col-3 col-sm-12" v-if="modalActionData.type == 'chain_ec'">
+                                            <label class="form-label" for="ec">Execution countdown</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12" v-if="modalActionData.type == 'chain_ec'">
+                                          <input class="form-input" type="number" id="ec" min="-1" v-model="modalActionData.chainEC">
+                                          <p class="text-gray text-italic">-1 infinite, 0 disabled or any number for loop countdown</p>
                                         </div>
                                     </div>
                                     <div class="form-group" :class="{'has-error': !modalActionData.rfCodes.length}" v-else-if="modalActionData.type == 'rfsend'">
@@ -105,6 +115,44 @@
                                             <p class="form-input-hint" v-show="!modalActionData.cmds.length && !loading">Add custom commands to make them pickable here.</p>
                                         </div>
                                     </div>
+                                    <div class="form-group" :class="{'has-error': !modalActionData.vars.length}" v-else-if="modalActionData.type == 'var'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Set value of</label>
+                                        </div>
+                                        <div class="col-4 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalActionData.varId" @change="modalActionData.selectedVarIndex = $event.target.selectedIndex">
+                                                <option v-for="_var in modalActionData.vars" :key="_var.id" :value="_var.id">{{ _var.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalActionData.vars.length && !loading">Add global variables to make them pickable here.</p>
+                                        </div>
+                                        <div class="col-1 col-sm-12" style="text-align: center; padding-top: 5px;"> eq </div>
+                                        <div v-if="modalActionData.vars.length" class="col-4 col-sm-12" >
+                                            <input v-if="modalActionData.vars[modalActionData.selectedVarIndex].type == 'String'" class="form-input" type="text" id="val" placeholder="Default value" v-model="modalActionData.varVal">
+                                            <input v-else-if="modalActionData.vars[modalActionData.selectedVarIndex].type == 'Date'" class="form-input" type="datetime-local" id="val" v-model="modalActionData.varVal">
+                                            <input v-else-if="modalActionData.vars[modalActionData.selectedVarIndex].type == 'Time'" class="form-input" type="time" id="val" v-model="modalActionData.varVal">
+                                            <input v-else class="form-input" type="number" id="val" v-model="modalActionData.varVal">
+                                        </div>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !actions.length}" v-else-if="modalActionData.type == 'action_noe'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Action target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalActionData.actionId">
+                                                <option v-for="action in actions" :key="action.id" :value="action.id">{{ action.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!actions.length && !loading">Add actions to make them pickable here.</p>
+                                        </div>
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="noe">Number of executions for target</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12">
+                                          <input class="form-input" type="number" id="noe" min="-1" v-model="modalActionData.actionNOE">
+                                          <p class="text-gray text-italic">-1 unlimited, 0 disabled or any number for execution countdown</p>
+                                        </div>
+                                    </div>
                                     <div class="form-group">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label" for="noe">Number of executions</label>
@@ -114,7 +162,7 @@
                                             <p class="text-gray text-italic">-1 unlimited, 0 disabled or any number for execution countdown</p>
                                         </div>
                                     </div>
-                                    <div class="form-group" v-show="modalActionData.type != 'rfsend' && modalActionData.type != 'cmd'">
+                                    <div class="form-group" v-show="modalActionData.type == 'output' || modalActionData.type == 'pwm' || modalActionData.type == 'chain'">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label" for="state">Set state</label>
                                         </div>
@@ -154,7 +202,7 @@
                                         </div>
                                         <div class="col-9 col-sm-12">
                                             <input class="form-input" type="number" step="0.1" id="rr" min="0.1" v-model="modalActionData.refreshRate">
-                                            <p class="text-gray text-italic">Interval for triggers check. Control CPU usage with that.</p>
+                                            <p class="text-gray text-italic">Interval (rest time) for triggers check. The lower the value, the faster the reaction will be. The higher the value, the slower the response, but less CPU usage. </p>
                                         </div>
                                     </div>
                                 </form>
@@ -196,9 +244,11 @@
                                                 <option value="ping">Ping</option>
                                                 <option value="rfrecived">Recive RF</option>
                                                 <option value="cmd">Custom command output</option>
+                                                <option value="var">Global variable</option>
                                                 <option value="i/o link">Linked Input/Output state</option>
                                                 <option value="sensor link">Linked Sensor value</option>
                                                 <option value="rfrecived link">Linked Recive RF</option>
+                                                <option value="var link">Linked Global variable</option>
                                             </select>
                                         </div>
                                     </div>
@@ -308,6 +358,24 @@
                                             <p class="form-input-hint" v-show="!modalTriggerData.cmds.length && !loading">Add custom commands to make them pickable here.</p>
                                         </div>
                                     </div>
+                                    <div class="form-group" :class="{'has-error': !modalTriggerData.vars.length}" v-else-if="modalTriggerData.type == 'var'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label" for="type">Value of</label>
+                                        </div>
+                                        <div class="col-4 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalTriggerData.varId" @change="modalTriggerData.selectedVarIndex = $event.target.selectedIndex">
+                                                <option v-for="_var in modalTriggerData.vars" :key="_var.id" :value="_var.id">{{ _var.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <p class="form-input-hint" v-show="!modalTriggerData.vars.length && !loading">Add global variables to make them pickable here.</p>
+                                        </div>
+                                        <div v-if="modalTriggerData.vars.length" class="col-4 col-sm-12" >
+                                            <input v-if="modalTriggerData.vars[modalTriggerData.selectedVarIndex].type == 'String'" class="form-input" type="text" id="val" placeholder="Default value" v-model="modalTriggerData.varVal">
+                                            <input v-else-if="modalTriggerData.vars[modalTriggerData.selectedVarIndex].type == 'Date'" class="form-input" type="datetime-local" id="val" v-model="modalTriggerData.varVal">
+                                            <input v-else-if="modalTriggerData.vars[modalTriggerData.selectedVarIndex].type == 'Time'" class="form-input" type="time" id="val" v-model="modalTriggerData.varVal">
+                                            <input v-else class="form-input" type="number" id="val" v-model="modalTriggerData.varVal">
+                                        </div>
+                                    </div>
                                     <div class="form-group" :class="{'has-error': !modalTriggerData.linkedPis.length}" v-else-if="modalTriggerData.type == 'i/o link'">
                                         <div class="col-3 col-sm-12">
                                             <label class="form-label">Linked Input/Output state</label>
@@ -366,6 +434,28 @@
                                             </select>
                                             <p class="form-input-hint" v-show="!modalTriggerData.linkedPis.length && !loading">Add linked pis devices to make them pickable here.</p>
                                             <p class="form-input-hint" v-show="!modalTriggerData.lrfCodes.length && !loading">Add RF codes on selected linked deviceto make them pickable here.</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" :class="{'has-error': !modalTriggerData.linkedPis.length}" v-else-if="modalTriggerData.type == 'var link'">
+                                        <div class="col-3 col-sm-12">
+                                            <label class="form-label">Linked global variable value</label>
+                                        </div>
+                                        <div class="col-9 col-sm-12 has-icon-left">
+                                            <select class="form-select" v-model="modalTriggerData.linkId" v-on:change="getLinkedData()">
+                                                <option v-for="link in modalTriggerData.linkedPis" :key="link.id" :value="link.id">{{ link.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <select class="form-select" v-model="modalTriggerData.lvarId">
+                                                <option v-for="_var in modalTriggerData.lvars" :key="_var.id" :value="_var.id">{{ _var.name }}</option>
+                                            </select>
+                                            <i class="form-icon" :class="{'loading': loading}"></i>
+                                            <div v-if="modalTriggerData.lvars.length">
+                                              <input v-if="modalTriggerData.lvars[modalTriggerData.selectedVarIndex].type == 'String'" class="form-input" type="text" id="val" placeholder="Default value" v-model="modalTriggerData.lvarVal">
+                                              <input v-else-if="modalTriggerData.lvars[modalTriggerData.selectedVarIndex].type == 'Date'" class="form-input" type="datetime-local" id="val" v-model="modalTriggerData.lvarVal">
+                                              <input v-else class="form-input" type="number" id="val" v-model="modalTriggerData.lvarVal">
+                                            </div>
+                                            <p class="form-input-hint" v-show="!modalTriggerData.linkedPis.length && !loading">Add linked pis devices to make them pickable here.</p>
+                                            <p class="form-input-hint" v-show="!modalTriggerData.lvars.length && !loading">Add variables on selected linked device to make them pickable here.</p>
                                         </div>
                                     </div>
                                     <div class="form-group" v-else-if="modalTriggerData.type == 'in chain'">
@@ -444,7 +534,7 @@
                         <div class="column" v-bind:class="[col]" v-for="(action,index) in actions" :key="action.id">
                             <div class="tile">
                                 <div class="tile-icon d-grid">
-                                    <button class="btn btn-link" v-on:click="openActionModal('Edit '+action.name,action.id,action.name,action.type,action.outputId,action.pwmId,action.chainId,action.noe,action.keepLogs,index,action.rfId,action.cmdId,action.refreshRate)">
+                                    <button class="btn btn-link" v-on:click="openActionModal('Edit '+action.name,action.id,action.name,action.type,action.outputId,action.pwmId,action.chainId,action.noe,action.keepLogs,index,action.rfId,action.cmdId,action.refreshRate,action.varId,action.varVal,action.actionId,action.actionNOE,action.chainEC)">
                                         <i class="icon icon-edit"></i>
                                     </button>
                                     <button class="btn btn-link tooltip tooltip-right" v-on:click="openTriggerModal('Add trigger for '+action.name,-1,action.id,'date','==',null,0)" data-tooltip="Add trigger">
@@ -471,6 +561,7 @@
                                             </li>
                                         </ol>
                                         <div v-else>No triggers added.</div>
+                                        <span class="float-right text-gray">N.O.E.: {{action.noe}}</span>
                                     </div>
                                 </div>
                             </div>
@@ -511,6 +602,11 @@ export default {
         rfId: -1,
         cmdId: -1,
         pwmId: -1,
+        varId: -1,
+        chainEC: -1,
+        actionId: -1,
+        actionNOE: -1,
+        selectedVarIndex: 0,
         noe: -1,
         state: 0,
         fr: '',
@@ -522,7 +618,8 @@ export default {
         pwms: [],
         chains: [],
         rfCodes: [],
-        cmds: []
+        cmds: [],
+        vars: []
       },
       modalTriggerData: {
         active: false,
@@ -544,6 +641,11 @@ export default {
         rfId: -1,
         lrfId: -1,
         cmdId: -1,
+        varId: -1,
+        varVal: '',
+        selectedVarIndex: 0,
+        lvarId: -1,
+        lvarVal: '',
         cmdOutput: '',
         ioState: 0,
         lioState: 0,
@@ -564,6 +666,8 @@ export default {
         rfCodes: [],
         lrfCodes: [],
         cmds: [],
+        vars: [],
+        lvars: [],
         linkedPis: [],
         linkId: -1,
         errors: [],
@@ -656,6 +760,7 @@ export default {
       this.modalTriggerData.sensors = []
       this.modalTriggerData.rfCodes = []
       this.modalTriggerData.cmds = []
+      this.modalTriggerData.vars = []
       this.modalTriggerData.linkedPis = []
       if (linkId != -1)this.getLinkedData()
       if (data != null) {
@@ -712,6 +817,10 @@ export default {
             this.modalTriggerData.cmdId = sourceId
             this.modalTriggerData.cmdOutput = data
             break
+          case 'var':
+            this.modalTriggerData.varId = sourceId
+            this.modalTriggerData.varVal = data
+            break
           case 'i/o link':
             this.modalTriggerData.lioId = sourceId
             this.modalTriggerData.lioState = data
@@ -723,6 +832,10 @@ export default {
           case 'rfrecived link':
             this.modalTriggerData.lsensorId = sourceId
             this.modalTriggerData.lsensorValue = data
+            break
+          case 'var link':
+            this.modalTriggerData.lvarId = sourceId
+            this.modalTriggerData.lvarVal = data
             break
         }
       }
@@ -777,8 +890,20 @@ export default {
               name: datalist[j + 1]
             })
           }
+        }),
+        this.doQPost('GetGlobalVars').then(datalist => {
+          for (var j = 2; j < (datalist.length - 1); j += 5) {
+            this.modalTriggerData.vars.push({
+              id: datalist[j],
+              name: datalist[j + 1],
+              type: datalist[j + 3]
+            })
+          }
         })
-      ]).catch(err => {
+      ]).then(()=>{
+        if(this.modalTriggerData.varId || this.modalTriggerData.lvarId)this.modalTriggerData.selectedVarIndex = this.modalTriggerData.vars.findIndex(el=>el.id == this.modalTriggerData.varId || this.modalTriggerData.lvarId)
+      })
+      .catch(err => {
         this.modalTriggerData.errors.push(err.message)
       })
     },
@@ -862,6 +987,12 @@ export default {
               sourceId = this.modalTriggerData.cmdId
             }
             break
+          case 'var':
+            if (!this.modalTriggerData.varId) { this.modalTriggerData.errors.push('Variable fields are required !') } else {
+              data = this.modalTriggerData.varVal
+              sourceId = this.modalTriggerData.varId
+            }
+            break
           case 'i/o link':
             if (!this.modalTriggerData.lioId || !this.modalTriggerData.linkId) { this.modalTriggerData.errors.push('Linked I/O fields are required !') } else {
               data = this.modalTriggerData.lioState
@@ -887,6 +1018,15 @@ export default {
               linkName = this.modalTriggerData.lrfCodes.find(x => x.id == sourceId).name
             }
             break
+          case 'var link':
+            if (!this.modalTriggerData.lvarVal || !this.modalTriggerData.lvarId || !this.modalTriggerData.linkId) { this.modalTriggerData.errors.push('Linked Variable fields are required !') } else {
+              data = this.modalTriggerData.lvarVal
+              sourceId = this.modalTriggerData.lvarId
+              linkId = this.modalTriggerData.linkId
+              let lvar = this.modalTriggerData.lvars.find(x => x.id == sourceId)
+              linkName = lvar.name
+            }
+            break
         }
       }
       if (!this.modalTriggerData.errors.length) {
@@ -900,7 +1040,7 @@ export default {
         })
       }
     },
-    openActionModal (title, id, name, type, outputId, pwmId, chainId, noe, keepLogs, index, rfId, cmdId, refreshRate) {
+    openActionModal (title, id, name, type, outputId, pwmId, chainId, noe, keepLogs, index, rfId, cmdId, refreshRate, varId, varVal, actionId, actionNOE, chainEC) {
       this.modalActionData.active = true
       this.modalActionData.title = title
       this.modalActionData.name = name
@@ -913,11 +1053,17 @@ export default {
       this.modalActionData.cmdId = cmdId
       this.modalActionData.noe = noe
       this.modalActionData.refreshRate = refreshRate
-      if (type == 'output') { this.modalActionData.state = this.actions[index].outputState } else if (type == 'pwm') {
+      this.modalActionData.varId = varId
+      this.modalActionData.actionId = actionId
+      this.modalActionData.actionNOE = actionNOE
+      this.modalActionData.chainEC = chainEC
+      if (type == 'output' || type == 'chain') { this.modalActionData.state = this.actions[index].outputState } 
+      else if (type == 'pwm') {
         this.modalActionData.state = this.actions[index].pwmSs
         this.modalActionData.fr = this.actions[index].pwmFr
         this.modalActionData.dc = this.actions[index].pwmDc
       }
+      else if (type == 'var')this.modalActionData.varVal = varVal
       this.modalActionData.keepLogs = keepLogs
       this.modalActionData.errors = []
       this.modalActionData.outputs = []
@@ -925,6 +1071,7 @@ export default {
       this.modalActionData.chains = []
       this.modalActionData.rfCodes = []
       this.modalActionData.cmds = []
+      this.modalActionData.vars = []
       this.doPosts([
         this.doQPost('GPIO_Oname').then(datalist => {
           for (var j = 2; j < (datalist.length - 1); j += 4) {
@@ -967,8 +1114,20 @@ export default {
               name: datalist[j + 1]
             })
           }
+        }),
+        this.doQPost('GetGlobalVars').then(datalist => {
+          for (var j = 2; j < (datalist.length - 1); j += 5) {
+            this.modalActionData.vars.push({
+              id: datalist[j],
+              name: datalist[j + 1],
+              type: datalist[j + 3]
+            })
+          }
         })
-      ]).catch(err => {
+      ]).then(()=>{
+        if(varId)this.modalActionData.selectedVarIndex = this.modalActionData.vars.findIndex(el=>el.id == varId)
+      })
+      .catch(err => {
         this.modalActionData.errors.push(err.message)
       })
     },
@@ -991,13 +1150,24 @@ export default {
         if (this.modalActionData.type == 'cmd' && (isNaN(this.modalActionData.cmdId) || this.modalActionData.cmdId == '' || this.modalActionData.cmdId == null || this.modalActionData.cmdId == -1)) {
           this.modalActionData.errors.push('CMD action selection is required with this type !')
         }
+        if (this.modalActionData.type == 'var' && (isNaN(this.modalActionData.varId) || this.modalActionData.varId == '' || this.modalActionData.varId == null || this.modalActionData.varId == -1)) {
+          this.modalActionData.errors.push('Global variable selection is required with this type !')
+        }
+        if (this.modalActionData.type == 'chain_ec' && (isNaN(this.modalActionData.chainId) || this.modalActionData.chainId == '' || this.modalActionData.chainId == null || this.modalActionData.chainId == -1 || isNaN(this.modalActionData.chainEC))) {
+          this.modalActionData.errors.push('Chain selection and counter is required with this type !')
+        }
+        if (this.modalActionData.type == 'action_noe' && (isNaN(this.modalActionData.actionId) || this.modalActionData.actionId == '' || this.modalActionData.actionId == null || this.modalActionData.actionId == -1 || isNaN(this.modalActionData.actionNOE))) {
+          this.modalActionData.errors.push('Action selection and counter is required with this type !')
+        }
         if (!this.modalActionData.noe) { this.modalActionData.errors.push('Number of executions is required !') }
       }
       if (!this.modalActionData.errors.length) {
         let targetId = -1
-        if (this.modalActionData.type == 'output') { targetId = this.modalActionData.outputId } else if (this.modalActionData.type == 'pwm') { targetId = this.modalActionData.pwmId } else if (this.modalActionData.type == 'chain') { targetId = this.modalActionData.chainId } else if (this.modalActionData.type == 'rfsend') { targetId = this.modalActionData.rfId } else if (this.modalActionData.type == 'cmd') { targetId = this.modalActionData.cmdId }
+        if (this.modalActionData.type == 'output') { targetId = this.modalActionData.outputId } else if (this.modalActionData.type == 'pwm') { targetId = this.modalActionData.pwmId } else if (this.modalActionData.type == 'chain'||this.modalActionData.type == 'chain_ec') { targetId = this.modalActionData.chainId } else if (this.modalActionData.type == 'rfsend') { targetId = this.modalActionData.rfId } else if (this.modalActionData.type == 'cmd') { targetId = this.modalActionData.cmdId }else if (this.modalActionData.type == 'var') { targetId = this.modalActionData.varId }else if (this.modalActionData.type == 'action_noe') { targetId = this.modalActionData.actionId }
+        let targetVal = ''
+        if(this.modalActionData.type == 'var')targetVal = this.modalActionData.varVal; else if (this.modalActionData.type == 'chain_ec')targetVal = this.modalActionData.chainEC;else if (this.modalActionData.type == 'action_noe')targetVal = this.modalActionData.actionNOE; else targetVal = this.modalActionData.state
         let postData = ''
-        if (deleteO) { postData = 'GPIO_ASA_Delete;' + this.modalActionData.id } else if (this.modalActionData.id === -1) { postData = 'GPIO_ASA_Add;' + this.modalActionData.name + ';' + this.modalActionData.type + ';' + targetId + ';' + this.modalActionData.noe + ';' + this.modalActionData.state + ';' + this.modalActionData.fr + ';' + this.modalActionData.dc + ';' + (+this.modalActionData.keepLogs) + ';' + this.modalActionData.refreshRate } else { postData = 'GPIO_ASA_Update;' + this.modalActionData.name + ';' + this.modalActionData.type + ';' + targetId + ';' + this.modalActionData.noe + ';' + this.modalActionData.state + ';' + this.modalActionData.fr + ';' + this.modalActionData.dc + ';' + this.modalActionData.id + ';' + (+this.modalActionData.keepLogs) + ';' + this.modalActionData.refreshRate }
+        if (deleteO) { postData = 'GPIO_ASA_Delete;' + this.modalActionData.id } else if (this.modalActionData.id === -1) { postData = 'GPIO_ASA_Add;' + this.modalActionData.name + ';' + this.modalActionData.type + ';' + targetId + ';' + this.modalActionData.noe + ';' + targetVal + ';' + this.modalActionData.fr + ';' + this.modalActionData.dc + ';' + (+this.modalActionData.keepLogs) + ';' + this.modalActionData.refreshRate } else { postData = 'GPIO_ASA_Update;' + this.modalActionData.name + ';' + this.modalActionData.type + ';' + targetId + ';' + this.modalActionData.noe + ';' + targetVal + ';' + this.modalActionData.fr + ';' + this.modalActionData.dc + ';' + this.modalActionData.id + ';' + (+this.modalActionData.keepLogs) + ';' + this.modalActionData.refreshRate }
         this.doPost(postData).then(() => {
           this.getActions()
           this.modalActionData.active = false
@@ -1012,11 +1182,24 @@ export default {
       else if (this.actions[i].type == 'chain') { return this.actions[i].chainName + (this.actions[i].outputState?' Execude':' Cancel') } 
       else if (this.actions[i].type == 'rfsend') { return this.actions[i].rfName + ' Transmit' } 
       else if (this.actions[i].type == 'cmd') { return this.actions[i].cmdName + ' Execude' }
+      else if (this.actions[i].type == 'var') { return this.actions[i].varName + ' = ' + this.actions[i].varVal}
+      else if (this.actions[i].type == 'chain_ec') { return this.actions[i].chainName + ' E.C. = ' + this.actions[i].chainEC} 
+      else if (this.actions[i].type == 'action_noe') { return this.actions.find(action => action.id == this.actions[i].actionId).name + ' N.O.E. = ' + this.actions[i].actionNOE} 
     },
     triggerSourceDisc (i, j) {
       let t = this.actions[i].triggers[j]
       let disc = t.type
-      if (t.type == 'i/o') { disc += ' ' + t.ioName } else if (t.type.search(/pwm/) != -1) { disc += ' ' + t.pwmName } else if (t.type == 'sensor') { disc += ' ' + t.sensorName } else if (t.type == 'ping') { disc += ' ' + t.sourceId } else if (t.type == 'rfrecived') { disc += ' ' + t.rfName } else if (t.type == 'cmd') { disc += ' ' + t.cmdName } else if (t.type == 'i/o link') { disc = 'i/o(l) ' + t.linkName + ':' + t.linkSName }else if (t.type == 'sensor link') { disc = 'sensor(l) ' + t.linkName + ':' + t.linkSName } else if (t.type == 'rfrecived link') { disc = 'rf(l) ' + t.linkName + ':' + t.linkSName }
+      if (t.type == 'i/o') { disc += ' ' + t.ioName } 
+      else if (t.type.search(/pwm/) != -1) { disc += ' ' + t.pwmName } 
+      else if (t.type == 'sensor') { disc += ' ' + t.sensorName } 
+      else if (t.type == 'ping') { disc += ' ' + t.sourceId } 
+      else if (t.type == 'rfrecived') { disc += ' ' + t.rfName } 
+      else if (t.type == 'cmd') { disc += ' ' + t.cmdName } 
+      else if (t.type == 'var') { disc += ' ' + t.valName } 
+      else if (t.type == 'i/o link') { disc = 'i/o(l) ' + t.linkName + ':' + t.linkSName }
+      else if (t.type == 'sensor link') { disc = 'sensor(l) ' + t.linkName + ':' + t.linkSName } 
+      else if (t.type == 'rfrecived link') { disc = 'rf(l) ' + t.linkName + ':' + t.linkSName }
+      else if (t.type == 'var link') { disc = 'var(l) ' + t.linkName + ':' + t.linkSName }
       disc += ' ' + t.operator + ' '
       switch (t.type) {
         case 'weekday':
@@ -1070,10 +1253,10 @@ export default {
       this.doPost('GPIO_ASAlist').then(datalist => {
         this.$route.meta.error = null
         this.actions = []
-        for (var j = 2; j < (datalist.length - 1); j = j + 24) {
-          let triggerList = datalist[j + 23].split('$')
+        for (var j = 2; j < (datalist.length - 1); j = j + 30) {
+          let triggerList = datalist[j + 29].split('$')
           let triggers = []
-          for (var i = 0; i < (triggerList.length - 1); i += 16) {
+          for (var i = 0; i < (triggerList.length - 1); i += 17) {
             triggers.push({
               id: parseInt(triggerList[i]),
               actionId: parseInt(datalist[j]),
@@ -1090,7 +1273,8 @@ export default {
               cmdName: triggerList[i + 12],
               linkId: parseInt(triggerList[i + 13]),
               linkSName: triggerList[i + 14],
-              linkName: triggerList[i + 15]
+              linkName: triggerList[i + 15],
+              valName: triggerList[i + 16]
             })
           }
           this.actions.push({
@@ -1116,6 +1300,12 @@ export default {
             cmdName: datalist[j + 20],
             refreshRate: parseFloat(datalist[j + 21]),
             cpuUsage: parseFloat(datalist[j + 22]),
+            varId: parseInt(datalist[j + 23]),
+            varVal: datalist[j + 24],
+            varName: datalist[j + 25],
+            actionId: parseInt(datalist[j + 26]),
+            actionNOE: datalist[j + 27],
+            chainEC: datalist[j + 28],
             triggers: triggers
           })
         }
@@ -1130,6 +1320,7 @@ export default {
         this.modalTriggerData.lios = []
         this.modalTriggerData.lsensors = []
         this.modalTriggerData.lrfCodes = []
+        this.modalTriggerData.lvars = []
         this.doPosts([
           this.doQPost('CallLinkedPi;' + this.modalTriggerData.linkId + ';GPIO_OInames').then(datalist => {
             for (var j = 2; j < (datalist.length - 1); j += 2) {
@@ -1158,6 +1349,15 @@ export default {
             }
           }
         }),
+        this.doQPost('CallLinkedPi;' + this.modalTriggerData.linkId +';GetGlobalVars').then(datalist => {
+            for (var j = 2; j < (datalist.length - 1); j += 5) {
+              this.modalTriggerData.lvars.push({
+                id: datalist[j],
+                name: datalist[j + 1],
+                type: datalist[j + 3]
+              })
+            }
+        })
         ]).catch(err => {
           this.modalTriggerData.errors.push(err.message)
         })

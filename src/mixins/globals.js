@@ -66,9 +66,14 @@ export default {
     doPost (req) {
       this.$Progress.start()
       this.loading = true
-      return this.$http.post('/', this.parseReq(req), { headers: {
+      return this.$http.post('/', this.parseReq(req), { 
+      headers: {
         'Content-type': 'raw'
-      } }).then(r => {
+      },
+      validateStatus: status => {
+        return status <= 500;
+      }
+      }).then(r => {
         this.$Progress.finish()
         return this.parseRes(r.data)
       }).catch((err) => {
@@ -82,7 +87,7 @@ export default {
     doQPost (req) {
       return this.$http.post('/', this.parseReq(req), { headers: {
         'Content-type': 'raw'
-      } }).then(r => {
+      }}).then(r => {
         return this.parseRes(r.data)
       })
     },

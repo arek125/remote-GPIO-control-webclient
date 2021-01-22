@@ -1,17 +1,19 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Home from './views/Home.vue'
-import Outputs from './views/Outputs.vue'
-import Inputs from './views/Inputs.vue'
-import Actions from './views/ScheduledActions.vue'
-import Login from './views/Login.vue'
-import Pwms from './views/Pwms.vue'
-import Chains from './views/Chains.vue'
-import SensorsView from './views/SensorsView.vue'
-import Rf from './views/Rf.vue'
-import CustomCmds from './views/CustomCmds.vue'
+// import Home from './views/Home.vue'
+// import Outputs from './views/Outputs.vue'
+// import Inputs from './views/Inputs.vue'
+// import Actions from './views/ScheduledActions.vue'
+// import Login from './views/Login.vue'
+// import Pwms from './views/Pwms.vue'
+// import Chains from './views/Chains.vue'
+// import SensorsView from './views/SensorsView.vue'
+// import Rf from './views/Rf.vue'
+// import CustomCmds from './views/CustomCmds.vue'
 import VueCookies from 'vue-cookies'
+import axios from 'axios'
 
+Object.defineProperty(Vue.prototype, '$http', { value: axios })
 Vue.use(Router)
 Vue.use(VueCookies)
 
@@ -22,73 +24,90 @@ const router = new Router({
       path: '/outputs',
       name: 'outputs',
       meta: { error: null, protected: true },
-      component: Outputs
+      //component: Outputs
+      component: () => import(/* webpackChunkName: "Outputs" */ './views/Outputs.vue')
     },
     {
       path: '/inputs',
       name: 'inputs',
       meta: { error: null, protected: true },
-      component: Inputs
+      //component: Inputs,
+      component: () => import(/* webpackChunkName: "Inputs" */ './views/Inputs.vue')
     },
     {
       path: '/pwms',
       name: 'pwms',
       meta: { error: null, protected: true },
-      component: Pwms
+      //component: Pwms
+      component: () => import(/* webpackChunkName: "Pwms" */ './views/Pwms.vue')
     },
     {
       path: '/chains',
       name: 'chains',
       meta: { error: null, protected: true },
-      component: Chains
+      //component: Chains
+      component: () => import(/* webpackChunkName: "Chains" */ './views/Chains.vue')
     },
     {
       path: '/actions',
       name: 'actions',
       meta: { error: null, protected: true },
-      component: Actions
+      //component: Actions
+      component: () => import(/* webpackChunkName: "Actions" */ './views/ScheduledActions.vue')
     },
     {
       path: '/sensors',
       name: 'sensors',
       meta: { error: null, protected: true },
-      component: SensorsView
+      //component: SensorsView
+      component: () => import(/* webpackChunkName: "SensorsView" */ './views/SensorsView.vue')
     },
     {
       path: '/rf',
       name: 'rf',
       meta: { error: null, protected: true },
-      component: Rf
+      //component: Rf,
+      component: () => import(/* webpackChunkName: "Rf" */ './views/Rf.vue')
     },
     {
       path: '/cmds',
       name: 'customcmds',
       meta: { error: null, protected: true },
-      component: CustomCmds
+      //component: CustomCmds
+      component: () => import(/* webpackChunkName: "CustomCmds" */ './views/CustomCmds.vue')
     },
     {
       path: '/',
       name: 'Home',
       meta: { error: null, protected: true },
-      component: Home
+      //component: Home
+      component: () => import(/* webpackChunkName: "Home" */ './views/Home.vue')
     },
     {
       path: '/login',
       name: 'login',
       meta: { error: null, protected: true },
-      component: Login
+      //component: Login
+      component: () => import(/* webpackChunkName: "Login" */ './views/Login.vue')
+    },
+    {
+      path: '/vars',
+      name: 'globalvariables',
+      meta: { error: null, protected: true },
+      //component: CustomCmds
+      component: () => import(/* webpackChunkName: "Vars" */ './views/Variables.vue')
     },
     {
       path: '*',
       meta: { error: 'Specfied route not found !', protected: true },
-      component: Home
+      component: () => import(/* webpackChunkName: "Home" */ './views/Home.vue')
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
   // this.$Progress.start()
-  Vue.axios.post('/', 'authCheck', { headers: {
+  axios.post('/', 'authCheck', { headers: {
     'Content-type': 'raw'
   } }).then(r => {
     // this.$Progress.finish()
