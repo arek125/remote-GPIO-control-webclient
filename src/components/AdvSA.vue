@@ -8,7 +8,7 @@
             <div class="panel-nav">
                 <div class="btn-group btn-group-block float-right">
                     <button class="btn" v-on:click="getActions()"><i class="icon icon-refresh centered"></i></button>
-                    <button class="btn" v-on:click="openActionModal('Add new action',-1,'','',-1,-1,-1,-1,true,-1,-1,-1,0.3)"><i class="icon icon-plus centered"></i></button>
+                    <button class="btn" v-on:click="openActionModal('Add new action',-1,'','',-1,-1,-1,-1,false,-1,-1,-1,0.5)"><i class="icon icon-plus centered"></i></button>
                 </div>
             </div>
             <div class="panel-body">
@@ -194,6 +194,7 @@
                                         <label class="form-switch">
                                             <input type="checkbox" v-model="modalActionData.keepLogs">
                                             <i class="form-icon"></i>Keep logs
+                                            <p class="text-gray text-italic">Make sure it doesn't clutter your database! Use only for debug.</p>
                                         </label>
                                     </div>
                                     <div class="form-group">
@@ -611,8 +612,8 @@ export default {
         state: 0,
         fr: '',
         dc: '',
-        keepLogs: true,
-        refreshRate: 0.3,
+        keepLogs: false,
+        refreshRate: 0.5,
         errors: [],
         outputs: [],
         pwms: [],
@@ -1184,7 +1185,7 @@ export default {
       else if (this.actions[i].type == 'cmd') { return this.actions[i].cmdName + ' Execude' }
       else if (this.actions[i].type == 'var') { return this.actions[i].varName + ' = ' + this.actions[i].varVal}
       else if (this.actions[i].type == 'chain_ec') { return this.actions[i].chainName + ' E.C. = ' + this.actions[i].chainEC} 
-      else if (this.actions[i].type == 'action_noe') { return this.actions.find(action => action.id == this.actions[i].actionId).name + ' N.O.E. = ' + this.actions[i].actionNOE} 
+      else if (this.actions[i].type == 'action_noe') {let index = this.actions.findIndex(action => action.id == this.actions[i].actionId); return (index != -1?this.actions[index].name:"?") + ' N.O.E. = ' + this.actions[i].actionNOE} 
     },
     triggerSourceDisc (i, j) {
       let t = this.actions[i].triggers[j]

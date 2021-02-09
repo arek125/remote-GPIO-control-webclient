@@ -88,8 +88,8 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-code float-left" v-on:click="modalAction(true)" :disabled="this.loading"><i class="icon icon-delete"></i> Delete</button>
-                            <button class="btn btn-code float-left" v-on:click="clearData()" :disabled="this.loading"><i class="icon icon-cross"></i> Clear data</button>
+                            <button v-if="modalData.id" class="btn btn-code float-left" v-on:click="modalAction(true)" :disabled="this.loading"><i class="icon icon-delete"></i> Delete</button>
+                            <button v-if="modalData.id" class="btn btn-code float-left" v-on:click="clearData()" :disabled="this.loading"><i class="icon icon-cross"></i> Clear data</button>
                             <button class="btn btn-primary" v-on:click="modalAction(false)" :disabled="this.loading"><i class="icon icon-check"></i> Confirm</button>
                         </div>
                     </div>
@@ -104,7 +104,7 @@
                     <div v-else class="columns">
                         <div class="column" v-bind:class="[col]" v-for="(sensor,index) in sensors" :key="sensor.id" >
                             <div class="tile tile-centered">
-                                <div class="tile-icon">
+                                <div v-if="sensor.value" class="tile-icon">
                                     <div class="tile-title text-large text-bold">{{ sensor.value+sensor.unit }}</div>
                                 </div>
                                 <div class="tile-content">
@@ -263,15 +263,16 @@ export default {
         this.$route.meta.error = null
         this.sensors = []
         for (var j = 2; j < (datalist.length - 1); j = j + 11) {
+          let val = parseFloat(datalist[j + 3])
           this.sensors.push({
             id: datalist[j],
             name: datalist[j + 1],
             type: datalist[j + 2],
-            value: parseFloat(datalist[j + 3]),
+            value: isNaN(val)?'':val,
             historyRefresh: datalist[j + 4],
             historyKeep: datalist[j + 5],
             unit: datalist[j + 6],
-            refreshDate: this.$moment.utc(datalist[j + 7], 'YYYY-MM-DD HH:mm:ss').local().format('YYYY-MM-DD HH:mm:ss'),
+            refreshDate: isNaN(val)?'':this.$moment.utc(datalist[j + 7], 'YYYY-MM-DD HH:mm:ss').local().format('YYYY-MM-DD HH:mm:ss'),
             selected: this.selectedSensors.indexOf(datalist[j]) > -1,
             cmdId: datalist[j + 8],
             gpio: datalist[j + 9],
